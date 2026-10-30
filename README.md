@@ -19,7 +19,7 @@
 - 礼物与入场按时间窗口合并
 - 最近 N 行历史在重启后恢复，并与本次直播用分割线隔开
 - 整块可配置圆角面板、透明度、边框、内边距、字号和颜色
-- 支持 Windows 已安装字体，以及上传 TTF/OTF/TTC/WOFF/WOFF2
+- 支持系统已安装字体，以及上传 TTF/OTF/TTC/WOFF/WOFF2
 - OBS Browser Source 原生透明背景
 - 本地 WebUI 实时预览、状态查看、Cookie 导入和演示消息
 - Cookie 文件、`--cookie-file`、`--cookie` 三种凭据入口

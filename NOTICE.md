@@ -1,6 +1,6 @@
 # Attribution
 
-This project is a Windows-oriented reimplementation inspired by
+This project is a PC-oriented reimplementation inspired by
 [`zlinux-live-util/pw-live-danmaku`](https://github.com/zlinux-live-util/pw-live-danmaku).
 
 The following aspects were ported or adapted under that project's MIT license:

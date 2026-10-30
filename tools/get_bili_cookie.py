@@ -5,7 +5,7 @@
 # ///
 """Open a browser, wait for Bilibili login, then write the Cookie file.
 
-This is a Windows-focused adaptation of the helper in VincentZyu233's upstream
+This is a cross-platform adaptation of the helper in VincentZyu233's upstream
 pw-live-danmaku pull request. It uses a temporary browser profile and Chrome
 DevTools Protocol, so it never touches the normal browser profile or handles a
 password.
