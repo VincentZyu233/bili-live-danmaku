@@ -2,6 +2,9 @@
 
 在 Windows 11 上把 B 站直播间弹幕渲染成适用于 OBS Browser Source 的透明聊天面板。Python 后端负责连接 B站、解析事件和缓存素材，本地 WebUI 负责控制台与画面渲染。
 
+> [!TIP]
+> 目前仍是初版，主要供自用阶段。欢迎通过 [Issue](https://github.com/VincentZyu233/bili-live-danmaku/issues) 或 PR 反馈问题、改进建议和功能需求。
+
 > 项目参考并移植了 [zlinux-live-util/pw-live-danmaku](https://github.com/zlinux-live-util/pw-live-danmaku) 的协议结论和交互设计。上游的 `pw` 指 PipeWire；本项目使用 OBS 浏览器源，不需要 PipeWire。
 
 ## 功能
