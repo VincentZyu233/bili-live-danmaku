@@ -23,7 +23,7 @@ jobs:
       - name: Type check
         run: uv run mypy src
       - name: Python syntax
-        run: uv run python -m compileall -q src tools
+        run: uv run python -m compileall -q src tools scripts
       - name: JavaScript syntax
         run: |
           node --check src/bili_live_danmaku/static/overlay.js
