@@ -1,0 +1,20 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Local credentials and generated runtime data
+cookie
+cookie.txt
+*.cookie
+.env
+data/
+
+# Local tooling
+.idea/
+.vscode/
+*.log

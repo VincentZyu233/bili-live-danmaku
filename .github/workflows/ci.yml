@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Install
+        run: uv sync --locked
+      - name: Lint
+        run: uv run ruff check .
+      - name: Type check
+        run: uv run mypy src
+      - name: Python syntax
+        run: uv run python -m compileall -q src tools
+      - name: JavaScript syntax
+        run: |
+          node --check src/bili_live_danmaku/static/overlay.js
+          node --check src/bili_live_danmaku/static/admin.js
+      - name: Tests
+        run: uv run pytest -q

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bili Live Danmaku Overlay</title>
+    <link rel="stylesheet" href="/static/overlay.css" />
+  </head>
+  <body>
+    <main id="stage" class="stage" aria-live="polite">
+      <section id="panel" class="panel" hidden>
+        <div id="status" class="status" hidden></div>
+        <div id="pinned" class="pinned"></div>
+        <div id="messages" class="messages"></div>
+      </section>
+    </main>
+    <script type="module" src="/static/overlay.js"></script>
+  </body>
+</html>
