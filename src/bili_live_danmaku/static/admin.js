@@ -308,6 +308,14 @@ byId("demoBtn").addEventListener("click", async () => {
     showNotice(error.message, true);
   }
 });
+byId("previewDemoBtn").addEventListener("click", async () => {
+  try {
+    await fetchJson("/api/demo?count=10", { method: "POST" });
+    showNotice("已发送带本地头像的测试消息。");
+  } catch (error) {
+    showNotice(error.message, true);
+  }
+});
 byId("uploadFontBtn").addEventListener("click", () => uploadFont().catch((error) => showNotice(error.message, true)));
 elements.fontFile.addEventListener("change", () => {
   if (elements.fontFile.files?.length) {

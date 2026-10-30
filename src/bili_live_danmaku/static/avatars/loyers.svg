@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#68d7ff"/><stop offset="1" stop-color="#2a61c9"/></linearGradient></defs>
+  <circle cx="48" cy="48" r="46" fill="url(#g)"/>
+  <text x="48" y="61" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="42" font-weight="700" fill="white">L</text>
+</svg>
+

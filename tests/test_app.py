@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from bili_live_danmaku.app import Runtime, create_app
+from bili_live_danmaku.app import Runtime, create_app, demo_messages
 from bili_live_danmaku.config import ConfigStore
 
 
@@ -46,3 +46,13 @@ def test_status_never_returns_cookie_value(tmp_path: Path) -> None:
         text = client.get("/api/status").text
         assert "top-secret" not in text
         assert client.get("/api/status").json()["cookie_present"] is True
+
+
+def test_demo_messages_include_local_avatars_and_varied_kinds() -> None:
+    messages = demo_messages()
+    assert len(messages) == 10
+    assert all(
+        message.avatar_url and message.avatar_url.startswith("/static/avatars/")
+        for message in messages
+    )
+    assert len({message.kind for message in messages}) >= 5

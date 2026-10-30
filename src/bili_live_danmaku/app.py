@@ -286,11 +286,12 @@ class Runtime:
 
 
 def _demo_message(kind: MessageKind, user: str, text: str, **kwargs: Any) -> ChatMessage:
+    parts = kwargs.pop("parts", [Fragment(type="text", text=text)])
     return ChatMessage(
         id=uuid.uuid4().hex,
         kind=kind,
         user=user,
-        parts=[Fragment(type="text", text=text)],
+        parts=parts,
         timestamp_ms=int(time.time() * 1000),
         **kwargs,
     )
@@ -298,10 +299,55 @@ def _demo_message(kind: MessageKind, user: str, text: str, **kwargs: Any) -> Cha
 
 def demo_messages() -> list[ChatMessage]:
     return [
-        _demo_message(MessageKind.TEXT, "Loyers", "这个圆角面板看起来不错", user_color="#79d7ff"),
-        _demo_message(MessageKind.GIFT, "红桃老K_-", "投喂 小心心", count=10, user_color="#ff91c8"),
-        _demo_message(MessageKind.ENTRY, "新观众", "进入了直播间"),
-        _demo_message(MessageKind.LIKE, "点赞的人", "为主播点赞了", avatar_url=None),
+        _demo_message(
+            MessageKind.TEXT,
+            "VincentZyu",
+            "啊环境啊u就是睡吧睡吧",
+            user_color="#f3f5ff",
+            avatar_url="/static/avatars/vincent.svg",
+        ),
+        _demo_message(
+            MessageKind.TEXT,
+            "VincentZyu",
+            "强化V刹无死角的不对不对吧",
+            user_color="#f3f5ff",
+            avatar_url="/static/avatars/vincent.svg",
+        ),
+        _demo_message(
+            MessageKind.TEXT,
+            "Loyers",
+            "这个圆角面板看起来不错",
+            user_color="#79d7ff",
+            avatar_url="/static/avatars/loyers.svg",
+        ),
+        _demo_message(
+            MessageKind.GIFT,
+            "红桃老K_-",
+            "投喂 小心心",
+            count=10,
+            user_color="#ff91c8",
+            avatar_url="/static/avatars/heart.svg",
+            parts=[
+                Fragment(type="text", text="投喂 ", verb=True),
+                Fragment(
+                    type="emote",
+                    text="小心心",
+                    url="/static/avatars/gift-heart.svg",
+                ),
+            ],
+        ),
+        _demo_message(
+            MessageKind.ENTRY,
+            "新观众",
+            "进入了直播间",
+            avatar_url="/static/avatars/new-viewer.svg",
+        ),
+        _demo_message(
+            MessageKind.LIKE,
+            "点赞的人",
+            "为主播点赞了",
+            avatar_url="/static/avatars/like.svg",
+        ),
         _demo_message(
             MessageKind.PAID,
             "醒目留言用户",
@@ -310,6 +356,7 @@ def demo_messages() -> list[ChatMessage]:
             amount_value=30,
             dwell_ms=60_000,
             user_type=UserType.MEMBER,
+            avatar_url="/static/avatars/sc.svg",
         ),
         _demo_message(
             MessageKind.MEMBERSHIP,
@@ -317,12 +364,28 @@ def demo_messages() -> list[ChatMessage]:
             "开通了舰长",
             amount="舰长 · CN¥138",
             user_type=UserType.MEMBER,
+            avatar_url="/static/avatars/captain.svg",
         ),
-        _demo_message(MessageKind.TEXT, "表情测试", "[汤圆] 自定义字体与表情 token 测试"),
+        _demo_message(
+            MessageKind.TEXT,
+            "表情测试",
+            "[汤圆] 自定义字体与表情 token 测试",
+            avatar_url="/static/avatars/emote.svg",
+            parts=[
+                Fragment(
+                    type="emote",
+                    text="[汤圆]",
+                    url="/static/avatars/tangyuan.svg",
+                    px=24,
+                ),
+                Fragment(type="text", text=" 自定义字体与表情 token 测试"),
+            ],
+        ),
         _demo_message(
             MessageKind.TEXT,
             "长消息测试",
             "这是一条较长的弹幕，用来检查中文换行、圆角底板内边距以及底部对齐是否正常。",
+            avatar_url="/static/avatars/long-text.svg",
         ),
     ]
 

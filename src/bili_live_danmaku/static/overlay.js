@@ -34,7 +34,9 @@ function hexToRgba(value, alpha) {
 }
 
 function proxied(url) {
-  return url ? `/media?url=${encodeURIComponent(url)}` : "";
+  if (!url) return "";
+  if (url.startsWith("/")) return url;
+  return `/media?url=${encodeURIComponent(url)}`;
 }
 
 function fontValue(font) {

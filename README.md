@@ -33,7 +33,7 @@ uv sync
 uv run bili-live-danmaku --room 5861873
 ```
 
-命令会启动 `http://127.0.0.1:8765/admin` 并自动打开控制台。输入直播间号或直播地址后保存，即可开始连接。
+命令会启动 `http://127.0.0.1:6161/admin` 并自动打开控制台。输入直播间号或直播地址后保存，即可开始连接。
 
 也可以直接用 Cookie 文件启动：
 
@@ -70,7 +70,7 @@ uv run tools/get_bili_cookie.py
 1. 启动 `bili-live-danmaku` 并保持窗口和本地服务运行。
 2. 在 OBS 的“来源”中点击 `+`，选择 **浏览器**。
 3. 名称可填 `B站弹幕`。
-4. URL 填 `http://127.0.0.1:8765/overlay`。
+4. URL 填 `http://127.0.0.1:6161/overlay`。
 5. 宽度先填 `480`，高度 `1080`；也可以在控制台修改画布尺寸后同步调整。
 6. 勾选“使用自定义帧率”，建议填 `30`。
 7. 背景不需要额外色键；页面本身是透明背景，只有圆角面板区域有可见底色。
@@ -85,7 +85,7 @@ uv run tools/get_bili_cookie.py
 --cookie COOKIE         直接传入 Cookie，不推荐
 --cookie-file PATH      从文件读取 Cookie
 --data-dir PATH         覆盖应用数据目录
---port PORT             本地端口，默认 8765
+--port PORT             本地端口，默认 6161
 --no-browser            不自动打开控制台
 --demo                  循环发送演示消息
 --verbose               详细日志

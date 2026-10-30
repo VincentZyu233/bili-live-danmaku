@@ -22,7 +22,7 @@ def build_parser() -> argparse.ArgumentParser:
     cookie_group.add_argument("--cookie", help="直接传入 Cookie；会出现在进程参数中，不推荐")
     cookie_group.add_argument("--cookie-file", help="从文件读取 Cookie")
     parser.add_argument("--data-dir", help="覆盖应用数据目录")
-    parser.add_argument("--port", type=int, default=8765, help="本地 WebUI 端口，默认 8765")
+    parser.add_argument("--port", type=int, default=6161, help="本地 WebUI 端口，默认 6161")
     parser.add_argument("--no-browser", action="store_true", help="启动后不自动打开控制台")
     parser.add_argument("--demo", action="store_true", help="循环发送演示消息，不连接B站")
     parser.add_argument("--verbose", action="store_true", help="输出详细服务日志")
