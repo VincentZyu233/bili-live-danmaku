@@ -25,15 +25,6 @@
 - Cookie 文件、`--cookie-file`、`--cookie` 三种凭据入口
 - 断线自动重连；匿名模式仍可接收弹幕，但昵称可能被打码
 
-## 🧰 环境
-
-- Windows 11 x64（目前仅在此平台完成测试）
-- [uv](https://docs.astral.sh/uv/)
-- OBS Studio，已在 32.1.2 上验证
-- Python 3.12 或更新版本，由 uv 自动管理
-
-项目使用跨平台的 Python、HTTP/WebSocket 和 OBS Browser Source 技术栈，理论上可跨平台 PC 运行；但 macOS/Linux 等平台的数据目录、浏览器路径、字体枚举和 OBS 集成尚未实测。
-
 ## 🚀 启动
 
 ```powershell
@@ -127,14 +118,6 @@ uv run scripts/measure_processes.py --name python --name obs-browser-page --seco
 协议夹具和事件测试不访问真实直播间；实际直播测试需要可用的房间号和可选 Cookie。OBS 端到端检查需要手动添加 Browser Source。
 
 性能会随 OBS Browser 版本、GPU 加速、画布尺寸和消息量变化。当前机器曾测得 5 个 OBS Browser 进程合计约 213 MB 工作集；本项目建议先按 30 FPS、`480x1080` 和 80 行上限运行，再根据 OBS 统计调整。
-
-## ⚠️ 已知限制
-
-- 目前只测试了 Windows 11 x64，理论上支持跨平台 PC，但其他系统可能需要调整数据目录、浏览器路径和字体枚举；暂不提供独立 exe。
-- 仅支持 B站，单直播间。
-- 不包含上游的本地 WebSocket/RTF 转播功能。
-- B站接口、风控和事件字段可能变化；断线会显示在控制台状态中。
-- OBS Browser Source 需要手动添加和刷新，不会自动操作 OBS 场景。
 
 ## 📄 License
 
