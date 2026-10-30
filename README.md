@@ -2,6 +2,8 @@
 
 把 B 站直播间弹幕渲染成适用于 OBS Browser Source 的透明聊天面板。Python 后端负责连接 B站、解析事件和缓存素材，本地 WebUI 负责控制台与画面渲染。
 
+目前的开发和测试环境主要是 Windows 11 x64；项目按跨平台 PC 设计，其他平台尚未充分验证。
+
 > [!TIP]
 > 目前仍是初版，主要供自用阶段。欢迎通过 [Issue](https://github.com/VincentZyu233/bili-live-danmaku/issues) 或 PR 反馈问题、改进建议和功能需求。
 
