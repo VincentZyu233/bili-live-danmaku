@@ -7,6 +7,12 @@
 
 > 项目参考并移植了 [zlinux-live-util/pw-live-danmaku](https://github.com/zlinux-live-util/pw-live-danmaku) 的协议结论和交互设计。上游的 `pw` 指 PipeWire；本项目使用 OBS 浏览器源，不需要 PipeWire。
 
+## 预览
+
+![OBS 中的 Bilibili 弹幕浮层](docs/images/preview/preview.png)
+
+在 OBS 32.1.2 中作为浏览器源运行，右侧为透明圆角弹幕面板，支持真实头像、礼物、点赞、舰长、历史消息与 LXGW 字体。
+
 ## 功能
 
 - 普通弹幕、头像、表情、礼物、入场、点赞、醒目留言和大航海卡片
