@@ -1,4 +1,4 @@
-# B站 Cookie 助手
+# 🍪 B站 Cookie 助手
 
 `get_bili_cookie.py` 会打开 Edge/Chrome 的临时 profile，等待你扫码登录 B站，然后通过 Chrome DevTools Protocol 读取 Cookie。
 

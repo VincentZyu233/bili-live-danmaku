@@ -1,4 +1,4 @@
-# Bili Live Danmaku
+# 📺 Bili Live Danmaku
 
 在 Windows 11 上把 B 站直播间弹幕渲染成适用于 OBS Browser Source 的透明聊天面板。Python 后端负责连接 B站、解析事件和缓存素材，本地 WebUI 负责控制台与画面渲染。
 
@@ -7,13 +7,13 @@
 
 > 项目参考并移植了 [zlinux-live-util/pw-live-danmaku](https://github.com/zlinux-live-util/pw-live-danmaku) 的协议结论和交互设计。上游的 `pw` 指 PipeWire；本项目使用 OBS 浏览器源，不需要 PipeWire。
 
-## 预览
+## 🖼️ 预览
 
 ![OBS 中的 Bilibili 弹幕浮层](docs/images/preview/preview.png)
 
 在 OBS 32.1.2 中作为浏览器源运行，右侧为透明圆角弹幕面板，支持真实头像、礼物、点赞、舰长、历史消息与 LXGW 字体。
 
-## 功能
+## ✨ 功能
 
 - 普通弹幕、头像、表情、礼物、入场、点赞、醒目留言和大航海卡片
 - 礼物与入场按时间窗口合并
@@ -25,14 +25,14 @@
 - Cookie 文件、`--cookie-file`、`--cookie` 三种凭据入口
 - 断线自动重连；匿名模式仍可接收弹幕，但昵称可能被打码
 
-## 环境
+## 🧰 环境
 
 - Windows 11 x64
 - [uv](https://docs.astral.sh/uv/)
 - OBS Studio，已在 32.1.2 上验证
 - Python 3.12 或更新版本，由 uv 自动管理
 
-## 启动
+## 🚀 启动
 
 ```powershell
 uv sync
@@ -53,7 +53,7 @@ uv run bili-live-danmaku --room 5861873 --cookie-file "$env:LOCALAPPDATA\bili-li
 uv run bili-live-danmaku --demo
 ```
 
-## 获取 Cookie
+## 🍪 获取 Cookie
 
 独立助手会启动 Edge/Chrome 的临时 profile，等待扫码登录后读取 Cookie：
 
@@ -71,7 +71,7 @@ uv run tools/get_bili_cookie.py
 
 `--cookie` 直接传值会出现在本机进程参数中，程序会打印警告，日常推荐 `--cookie-file` 或控制台导入。
 
-## 配置到 OBS
+## 🎛️ 配置到 OBS
 
 1. 启动 `bili-live-danmaku` 并保持窗口和本地服务运行。
 2. 在 OBS 的“来源”中点击 `+`，选择 **浏览器**。
@@ -84,7 +84,7 @@ uv run tools/get_bili_cookie.py
 
 控制台中的“复制地址”和实时预览可用来确认字体、圆角、透明度和消息效果。
 
-## 命令行
+## ⌨️ 命令行
 
 ```text
 --room ROOM             直播间号或地址
@@ -97,7 +97,7 @@ uv run tools/get_bili_cookie.py
 --verbose               详细日志
 ```
 
-## 数据位置
+## 📁 数据位置
 
 默认应用数据目录：
 
@@ -107,7 +107,7 @@ uv run tools/get_bili_cookie.py
 
 其中包含 `config.json`、`cookie.txt`、`history/`、`fonts/` 和图片缓存。Cookie、历史和缓存不会提交到仓库。
 
-## 开发
+## 🛠️ 开发
 
 ```powershell
 uv sync
@@ -120,7 +120,7 @@ uv run pytest -q
 
 性能会随 OBS Browser 版本、GPU 加速、画布尺寸和消息量变化。当前机器曾测得 5 个 OBS Browser 进程合计约 213 MB 工作集；本项目建议先按 30 FPS、`480x1080` 和 80 行上限运行，再根据 OBS 统计调整。
 
-## 已知限制
+## ⚠️ 已知限制
 
 - 仅支持 Windows 11 x64，不提供独立 exe。
 - 仅支持 B站，单直播间。
@@ -128,6 +128,6 @@ uv run pytest -q
 - B站接口、风控和事件字段可能变化；断线会显示在控制台状态中。
 - OBS Browser Source 需要手动添加和刷新，不会自动操作 OBS 场景。
 
-## License
+## 📄 License
 
 MIT。上游来源与协议实现说明见 [LICENSE](LICENSE) 和 [NOTICE.md](NOTICE.md)。
