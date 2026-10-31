@@ -1,5 +1,9 @@
 # 📺 Bili Live Danmaku
 
+<p align="center">
+  <img src="src/bili_live_danmaku/static/assets/bilibili-avatar.png" width="160" alt="Bili Live Danmaku logo">
+</p>
+
 把 B 站直播间弹幕渲染成适用于 OBS Browser Source 的透明聊天面板。Python 后端负责连接 B站、解析事件和缓存素材，本地 WebUI 负责控制台与画面渲染。
 
 目前的开发和测试环境主要是 Windows 11 x64；项目按跨平台 PC 设计，其他平台尚未充分验证。
@@ -28,6 +32,8 @@
 - 断线自动重连；匿名模式仍可接收弹幕，但昵称可能被打码
 
 ## 🚀 启动
+
+双击 `scripts/start-bili-live-danmaku.cmd` 可检查并启动 6161 服务；服务已运行时只会打开 WebUI。桌面快捷方式名称为 `Bili Live Danmaku`，关闭控制台窗口即可停止服务。
 
 ```powershell
 uv sync
@@ -123,4 +129,5 @@ uv run scripts/measure_processes.py --name python --name obs-browser-page --seco
 
 ## 📄 License
 
-MIT。上游来源与协议实现说明见 [LICENSE](LICENSE) 和 [NOTICE.md](NOTICE.md)。
+MIT。上游来源与协议实现说明见 [LICENSE](LICENSE) 和 [NOTICE.md](NOTICE.md)。B站小电视与头像组合图标说明见
+[src/bili_live_danmaku/static/assets/BILIBILI-LOGO-NOTICE.md](src/bili_live_danmaku/static/assets/BILIBILI-LOGO-NOTICE.md)。
