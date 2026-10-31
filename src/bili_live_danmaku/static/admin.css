@@ -1,6 +1,14 @@
+@font-face {
+  font-family: "LXGW WenKai Mono";
+  src: url("/static/fonts/LXGWWenKaiMono-Medium.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
-  font-family: "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", sans-serif;
+  font-family: "LXGW WenKai Mono", sans-serif;
   background: #0d1017;
   color: #eef2f8;
   --card: rgba(22, 27, 38, 0.9);
@@ -30,6 +38,45 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+pre,
+code {
+  font: inherit;
+}
+
+.github-repo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  border: 1px solid rgba(220, 235, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(9, 15, 25, 0.86);
+  color: #dcebff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 120ms ease, border-color 120ms ease;
+}
+
+.title-line {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  flex-wrap: wrap;
+}
+
+.github-repo-link:hover {
+  transform: translateY(-2px);
+  border-color: rgba(116, 185, 255, 0.6);
+}
+
+.github-repo-link svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
 }
 
 .shell {

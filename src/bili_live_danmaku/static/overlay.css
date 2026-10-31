@@ -1,6 +1,14 @@
+@font-face {
+  font-family: "LXGW WenKai Mono";
+  src: url("/static/fonts/LXGWWenKaiMono-Medium.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
-  --font-family: "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  --font-family: "LXGW WenKai Mono", sans-serif;
   --font-size: 28px;
   --panel-bg: rgba(11, 13, 18, 0.58);
   --panel-radius: 28px;
@@ -288,3 +296,4 @@ body {
     animation: none;
   }
 }
+

@@ -467,8 +467,11 @@ def create_app(runtime: Runtime) -> FastAPI:
 
     @app.get("/api/fonts")
     async def list_fonts() -> dict[str, object]:
+        system = runtime.fonts.system_fonts()
+        if "LXGW WenKai Mono" not in system:
+            system.insert(0, "LXGW WenKai Mono")
         return {
-            "system": runtime.fonts.system_fonts(),
+            "system": system,
             "uploaded": runtime.fonts.uploaded(),
         }
 

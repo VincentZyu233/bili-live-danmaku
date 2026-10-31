@@ -80,7 +80,7 @@ function collectConfig() {
       width: numberValue(elements.width, 480),
       height: numberValue(elements.height, 1080),
       font: {
-        family: elements.fontFamily.value || "Microsoft YaHei UI",
+        family: elements.fontFamily.value || "LXGW WenKai Mono",
         size: numberValue(elements.fontSize, 28),
         url: selectedFont?.dataset.url || null,
       },

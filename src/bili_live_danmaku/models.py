@@ -57,7 +57,7 @@ class ConnectionStatus(BaseModel):
 
 
 class FontSettings(BaseModel):
-    family: str = "Microsoft YaHei UI"
+    family: str = "LXGW WenKai Mono"
     size: int = Field(default=28, ge=12, le=72)
     url: str | None = None
 

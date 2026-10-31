@@ -26,6 +26,7 @@
 - 最近 N 行历史在重启后恢复，并与本次直播用分割线隔开
 - 整块可配置圆角面板、透明度、边框、内边距、字号和颜色
 - 支持系统已安装字体，以及上传 TTF/OTF/TTC/WOFF/WOFF2
+- 内置 LXGW WenKai Mono Medium（SIL OFL 1.1），控制台和弹幕浮层默认统一使用霞鹜文楷
 - OBS Browser Source 原生透明背景
 - 本地 WebUI 实时预览、状态查看、Cookie 导入和演示消息
 - Cookie 文件、`--cookie-file`、`--cookie` 三种凭据入口
@@ -131,3 +132,6 @@ uv run scripts/measure_processes.py --name python --name obs-browser-page --seco
 
 MIT。上游来源与协议实现说明见 [LICENSE](LICENSE) 和 [NOTICE.md](NOTICE.md)。B站小电视与头像组合图标说明见
 [src/bili_live_danmaku/static/assets/BILIBILI-LOGO-NOTICE.md](src/bili_live_danmaku/static/assets/BILIBILI-LOGO-NOTICE.md)。
+
+内置字体为 LXGW WenKai Mono Medium，按 SIL Open Font License 1.1 分发；许可见
+[src/bili_live_danmaku/static/fonts/OFL.txt](src/bili_live_danmaku/static/fonts/OFL.txt)。
