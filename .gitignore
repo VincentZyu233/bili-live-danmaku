@@ -11,8 +11,10 @@ htmlcov/
 cookie
 cookie.txt
 *.cookie
-.env
+config/config.yaml
+config/cookie.txt
 data/
+.env
 
 # Local tooling
 .idea/

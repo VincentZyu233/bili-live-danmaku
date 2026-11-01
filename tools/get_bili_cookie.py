@@ -39,9 +39,7 @@ COOKIE_ORDER = ["SESSDATA", "bili_jct", "DedeUserID", "buvid3", "buvid4", "b_nut
 
 
 def default_output() -> Path:
-    local = os.environ.get("LOCALAPPDATA")
-    base = Path(local) if local else Path.home() / "AppData" / "Local"
-    return base / "bili-live-danmaku" / "cookie.txt"
+    return Path(__file__).resolve().parents[1] / "config" / "cookie.txt"
 
 
 def browser_candidates() -> list[Path]:

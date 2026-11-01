@@ -1,0 +1,69 @@
+version: 2
+
+# B站直播间
+room: "5861873"
+auto_connect: true
+
+# 本地 WebUI
+server:
+  host: "127.0.0.1"
+  port: 6161
+  open_browser: true
+
+# Cookie 路径相对于项目根目录；建议只放在本地并确保不提交
+cookie_file: "config/cookie.txt"
+
+# 历史记录和缓存均保存在项目目录内
+storage:
+  data_dir: "data"
+history_lines: 60
+
+# 入场和礼物事件的合并窗口
+entry_merge_seconds: 5.0
+gift_merge_seconds: 5.0
+
+# B站断线重连退避
+reconnect:
+  base_seconds: 1.0
+  max_seconds: 30.0
+
+tts:
+  enabled: false
+  voice: "zh-CN-XiaoxiaoNeural"
+  rate: "+0%"
+  volume: "+0%"
+  pitch: "+0Hz"
+  read_kinds:
+    - text
+    - gift
+    - entry
+    - like
+    - paid
+    - membership
+  include_username: true
+  max_chars: 180
+  queue_size: 32
+  min_interval_ms: 300
+
+logging:
+  level: INFO
+
+theme:
+  width: 480
+  height: 1080
+  font:
+    family: "LXGW WenKai Mono"
+    size: 28
+    url: null
+  panel_background: "#0b0d12"
+  panel_opacity: 0.58
+  panel_radius: 28
+  panel_border: "#ffffff"
+  panel_border_opacity: 0.12
+  panel_padding: 18
+  row_gap: 8
+  text_color: "#f4f6fb"
+  muted_color: "#aeb5c2"
+  accent_color: "#ffd66b"
+  show_status: true
+  max_messages: 80

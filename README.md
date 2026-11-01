@@ -30,7 +30,9 @@
 - OBS Browser Source 原生透明背景
 - 本地 WebUI 实时预览、状态查看、Cookie 导入和演示消息
 - Cookie 文件、`--cookie-file`、`--cookie` 三种凭据入口
-- 断线自动重连；匿名模式仍可接收弹幕，但昵称可能被打码
+- YAML 配置统一管理直播、服务、主题、重连和 TTS
+- Microsoft Edge TTS 全事件朗读，可独立关闭并运行在本机默认音频设备
+- 断线自动重连；未配置 Cookie 时使用匿名模式
 
 ## 🚀 启动
 
@@ -38,15 +40,17 @@
 
 ```powershell
 uv sync
-uv run bili-live-danmaku --room 5861873
+uv run bili-live-danmaku
 ```
+
+首次启动会从 `config/config.example.yaml` 创建 `config/config.yaml`。修改 YAML 后重启服务生效。
 
 命令会启动 `http://127.0.0.1:6161/admin` 并自动打开控制台。输入直播间号或直播地址后保存，即可开始连接。
 
 也可以直接用 Cookie 文件启动：
 
 ```powershell
-uv run bili-live-danmaku --room 5861873 --cookie-file "$env:LOCALAPPDATA\bili-live-danmaku\cookie.txt"
+uv run bili-live-danmaku --room 5861873 --cookie-file "config/cookie.txt"
 ```
 
 如果想要离线预览：
@@ -66,11 +70,11 @@ uv run tools/get_bili_cookie.py
 默认写入：
 
 ```text
-%LOCALAPPDATA%\bili-live-danmaku\cookie.txt
+config/cookie.txt
 ```
 
 如果启动时检测到 Cookie 存在但已经在 B站侧失效，程序会拒绝进入重连循环并直接退出，
-同时提示运行 `tools/get_bili_cookie.py` 重新扫码登录。
+同时提示运行 `tools/get_bili_cookie.py` 重新扫码登录。扫描脚本会先验证 B站登录状态，再写入 Cookie。
 
 也可以把已有 Cookie 粘贴到控制台的“手动粘贴 Cookie”，或选择 Cookie 文件后导入。Cookie 按上游方式以明文保存；不要提交到 Git、发到公开聊天或粘贴进 issue。
 
@@ -89,14 +93,35 @@ uv run tools/get_bili_cookie.py
 
 控制台中的“复制地址”和实时预览可用来确认字体、圆角、透明度和消息效果。
 
+## 🔊 Edge TTS 弹幕朗读
+
+在 `config/config.yaml` 中配置：
+
+```yaml
+tts:
+  enabled: true
+  voice: zh-CN-XiaoxiaoNeural
+  rate: "+0%"
+  volume: "+0%"
+  pitch: "+0Hz"
+  read_kinds: [text, gift, entry, like, paid, membership]
+  include_username: true
+  max_chars: 180
+  queue_size: 32
+  min_interval_ms: 300
+```
+
+Edge TTS 使用系统默认音频设备播放。消息会串行排队，队列满时丢弃最旧任务；单次朗读失败不会中断直播连接。启用后弹幕文字会发送给 Microsoft Edge TTS 服务。
+
 ## ⌨️ 命令行
 
 ```text
---room ROOM             直播间号或地址
+--room ROOM             覆盖 YAML 中的直播间号或地址
 --cookie COOKIE         直接传入 Cookie，不推荐
---cookie-file PATH      从文件读取 Cookie
---data-dir PATH         覆盖应用数据目录
---port PORT             本地端口，默认 6161
+--cookie-file PATH      覆盖 YAML 中的 Cookie 文件
+--root PATH             项目根目录，默认当前工作目录
+--config PATH           指定 YAML 配置文件
+--port PORT             覆盖 YAML 中的本地端口
 --no-browser            不自动打开控制台
 --demo                  循环发送演示消息
 --verbose               详细日志
@@ -104,13 +129,17 @@ uv run tools/get_bili_cookie.py
 
 ## 📁 数据位置
 
-默认应用数据目录：
+所有运行数据都保存在项目目录内：
 
 ```text
-%LOCALAPPDATA%\bili-live-danmaku\
+config/config.yaml   本地配置（Git 忽略）
+config/cookie.txt    本地 Cookie（Git 忽略）
+data/history/        历史记录
+data/fonts/          上传字体
+data/cache/          图片与 TTS 临时缓存
 ```
 
-其中包含 `config.json`、`cookie.txt`、`history/`、`fonts/` 和图片缓存。Cookie、历史和缓存不会提交到仓库。
+0.2.0 不再使用 `%LOCALAPPDATA%/bili-live-danmaku`。Cookie、历史和缓存不会提交到仓库。
 
 ## 🛠️ 开发
 

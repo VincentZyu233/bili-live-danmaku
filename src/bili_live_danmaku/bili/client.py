@@ -213,6 +213,8 @@ class BiliClient:
         on_message: MessageCallback,
         entry_merge_seconds: float,
         gift_merge_seconds: float,
+        reconnect_base_seconds: float = 1.0,
+        reconnect_max_seconds: float = 30.0,
     ) -> None:
         self.room = room
         self.cookie = cookie
@@ -220,6 +222,8 @@ class BiliClient:
         self.on_message = on_message
         self.entry_merge_seconds = entry_merge_seconds
         self.gift_merge_seconds = gift_merge_seconds
+        self.reconnect_base_seconds = reconnect_base_seconds
+        self.reconnect_max_seconds = reconnect_max_seconds
         self._stopped = asyncio.Event()
         self._task: asyncio.Task[None] | None = None
 
@@ -238,7 +242,7 @@ class BiliClient:
         await self.on_status(status)
 
     async def run(self) -> None:
-        backoff = 1.0
+        backoff = self.reconnect_base_seconds
         while not self._stopped.is_set():
             try:
                 await self._connect_once()
@@ -261,7 +265,7 @@ class BiliClient:
                     )
                 )
                 await asyncio.sleep(backoff + random.uniform(0, 0.4))
-                backoff = min(30.0, backoff * 2)
+                backoff = min(self.reconnect_max_seconds, backoff * 2)
 
     async def _connect_once(self) -> None:
         await self._status(

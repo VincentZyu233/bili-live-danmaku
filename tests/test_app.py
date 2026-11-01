@@ -25,7 +25,8 @@ def test_api_and_pages_smoke(tmp_path: Path) -> None:
 
         response = client.post("/api/cookie", json={"cookie": "SESSDATA=abc; DedeUserID=1"})
         assert response.status_code == 200
-        assert (tmp_path / "cookie.txt").read_text(encoding="utf-8").startswith("SESSDATA=")
+        cookie_text = (tmp_path / "config" / "cookie.txt").read_text(encoding="utf-8")
+        assert cookie_text.startswith("SESSDATA=")
 
         response = client.post(
             "/api/fonts", files={"file": ("demo.ttf", b"not-a-real-font", "font/ttf")}

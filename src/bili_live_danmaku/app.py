@@ -16,7 +16,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
 from .bili.client import BiliClient, has_login_cookie
-from .config import ConfigStore, atomic_write_text, default_cookie_file
+from .config import ConfigStore, atomic_write_text
 from .history import HistoryStore
 from .media import MAX_FONT_BYTES, FontLibrary, ImageProxy
 from .models import (
@@ -28,6 +28,7 @@ from .models import (
     MessageKind,
     UserType,
 )
+from .tts import TTSService
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -92,6 +93,7 @@ class Runtime:
         self.history = HistoryStore(config_store.data_dir)
         self.images = ImageProxy(config_store.data_dir / "cache" / "images")
         self.fonts = FontLibrary(config_store.data_dir / "fonts")
+        self.tts = TTSService(self.config.tts, config_store.data_dir / "cache" / "tts")
         self.status = ConnectionStatus()
         self.client: BiliClient | None = None
         self._client_lock = asyncio.Lock()
@@ -103,6 +105,7 @@ class Runtime:
     async def start(self) -> None:
         self._stopped.clear()
         self._status_task = asyncio.create_task(self._status_loop(), name="status-loop")
+        await self.tts.start()
         if self.demo:
             self.status = ConnectionStatus(state="connected", message="演示模式")
             self._demo_task = asyncio.create_task(self._run_demo(), name="demo-source")
@@ -123,6 +126,7 @@ class Runtime:
             self._status_task.cancel()
             await asyncio.gather(self._status_task, return_exceptions=True)
             self._status_task = None
+        await self.tts.stop()
         await self._stop_client()
         await self.history.flush()
         await self.images.close()
@@ -134,8 +138,7 @@ class Runtime:
 
     def cookie_path(self) -> Path:
         selected = self.cookie_file_override or self.config.cookie_file
-        fallback = default_cookie_file(self.config_store.data_dir)
-        return Path(selected or fallback).expanduser().resolve()
+        return self.config_store.cookie_path(selected)
 
     def read_cookie(self) -> str:
         if self.cookie_override is not None:
@@ -164,6 +167,8 @@ class Runtime:
                 on_message=self._on_message,
                 entry_merge_seconds=self.config.entry_merge_seconds,
                 gift_merge_seconds=self.config.gift_merge_seconds,
+                reconnect_base_seconds=self.config.reconnect.base_seconds,
+                reconnect_max_seconds=self.config.reconnect.max_seconds,
             )
             self.client.start()
 
@@ -181,6 +186,7 @@ class Runtime:
     async def _on_message(self, message: ChatMessage) -> None:
         self.history.append_current(message)
         await self.hub.broadcast("event", message.model_dump(mode="json"))
+        await self.tts.enqueue(message)
         now = time.monotonic()
         self._recent_messages.append(now)
         while self._recent_messages and now - self._recent_messages[0] > 10:
@@ -200,7 +206,7 @@ class Runtime:
     async def save_config(self, config: AppConfig) -> None:
         previous = self.config
         if not config.cookie_file:
-            config.cookie_file = str(default_cookie_file(self.config_store.data_dir))
+            config.cookie_file = "config/cookie.txt"
         self.config_store.save(config)
         self.config = config
         await self.hub.broadcast("config", config.model_dump(mode="json"))
@@ -230,9 +236,9 @@ class Runtime:
     async def delete_cookie(self) -> None:
         path = self.cookie_path()
         try:
-            path.relative_to(self.config_store.data_dir)
+            path.relative_to(self.config_store.root_dir / "config")
         except ValueError as exc:
-            raise ValueError("只能从应用数据目录中删除 Cookie") from exc
+            raise ValueError("只能从项目 config 目录中删除 Cookie") from exc
         try:
             await asyncio.to_thread(path.unlink)
         except FileNotFoundError:
@@ -463,6 +469,13 @@ def create_app(runtime: Runtime) -> FastAPI:
     @app.post("/api/demo")
     async def send_demo(count: int = 8) -> dict[str, bool]:
         await runtime.emit_demo(count)
+        return {"ok": True}
+
+    @app.post("/api/tts/test")
+    async def test_tts() -> dict[str, bool]:
+        if not runtime.config.tts.enabled:
+            raise HTTPException(status_code=400, detail="TTS 未启用")
+        await runtime.tts.speak_test()
         return {"ok": True}
 
     @app.get("/api/fonts")

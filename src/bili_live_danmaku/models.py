@@ -80,13 +80,51 @@ class ThemeSettings(BaseModel):
     max_messages: int = Field(default=80, ge=5, le=500)
 
 
+class ServerSettings(BaseModel):
+    host: str = "127.0.0.1"
+    port: int = Field(default=6161, ge=1, le=65535)
+    open_browser: bool = True
+
+
+class StorageSettings(BaseModel):
+    data_dir: str = "data"
+
+
+class ReconnectSettings(BaseModel):
+    base_seconds: float = Field(default=1.0, ge=0.1, le=60)
+    max_seconds: float = Field(default=30.0, ge=1, le=300)
+
+
+class TTSSettings(BaseModel):
+    enabled: bool = False
+    voice: str = "zh-CN-XiaoxiaoNeural"
+    rate: str = "+0%"
+    volume: str = "+0%"
+    pitch: str = "+0Hz"
+    read_kinds: list[MessageKind] = Field(default_factory=lambda: list(MessageKind))
+    include_username: bool = True
+    max_chars: int = Field(default=180, ge=1, le=1000)
+    queue_size: int = Field(default=32, ge=1, le=500)
+    min_interval_ms: int = Field(default=300, ge=0, le=10_000)
+
+
+class LoggingSettings(BaseModel):
+    level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+
+
 class AppConfig(BaseModel):
+    version: int = 2
     room: str = ""
-    cookie_file: str = ""
+    cookie_file: str = "config/cookie.txt"
     history_lines: int = Field(default=60, ge=0, le=2000)
     entry_merge_seconds: float = Field(default=5.0, ge=0, le=60)
     gift_merge_seconds: float = Field(default=5.0, ge=0, le=60)
     auto_connect: bool = True
+    server: ServerSettings = Field(default_factory=ServerSettings)
+    storage: StorageSettings = Field(default_factory=StorageSettings)
+    reconnect: ReconnectSettings = Field(default_factory=ReconnectSettings)
+    tts: TTSSettings = Field(default_factory=TTSSettings)
+    logging: LoggingSettings = Field(default_factory=LoggingSettings)
     theme: ThemeSettings = Field(default_factory=ThemeSettings)
 
 

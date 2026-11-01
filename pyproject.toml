@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bili-live-danmaku"
-version = "0.1.0"
+version = "0.2.0"
 description = "Transparent Bilibili live chat overlay for OBS Browser Source"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -13,9 +13,12 @@ authors = [{ name = "Vincent Zyu" }]
 keywords = ["bilibili", "danmaku", "obs", "overlay", "pc"]
 dependencies = [
   "brotli>=1.1.0",
+  "edge-tts>=7.3.1",
   "fastapi>=0.115.0",
   "httpx>=0.28.0",
+  "miniaudio>=1.71",
   "python-multipart>=0.0.20",
+  "pyyaml>=6.0",
   "uvicorn[standard]>=0.34.0",
   "websockets>=15.0",
 ]
@@ -29,6 +32,7 @@ dev = [
   "pytest>=8.3.0",
   "pytest-asyncio>=0.25.0",
   "ruff>=0.11.0",
+  "types-pyyaml>=6.0",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -56,5 +60,5 @@ packages = ["bili_live_danmaku"]
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-module = ["brotli"]
+module = ["brotli", "miniaudio", "yaml"]
 ignore_missing_imports = true

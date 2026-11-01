@@ -70,6 +70,7 @@ function numberValue(element, fallback) {
 function collectConfig() {
   const selectedFont = elements.fontFamily.selectedOptions[0];
   return {
+    ...(currentConfig || {}),
     room: elements.room.value.trim(),
     cookie_file: elements.cookieFile.value.trim(),
     history_lines: numberValue(elements.historyLines, 60),
