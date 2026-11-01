@@ -185,6 +185,24 @@ def write_cookie(path: Path, cookie: str) -> None:
         os.chmod(target, 0o600)
 
 
+def cookie_is_logged_in(cookie: str) -> bool:
+    request = urllib.request.Request(
+        "https://api.bilibili.com/x/web-interface/nav",
+        headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "Referer": "https://www.bilibili.com/",
+            "Cookie": cookie,
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=8) as response:
+            payload = json.load(response)
+    except (OSError, ValueError, urllib.error.URLError):
+        return False
+    data = payload.get("data") if isinstance(payload, dict) else None
+    return isinstance(data, dict) and data.get("isLogin") is True
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="打开浏览器扫码登录 B站并导出 Cookie")
     parser.add_argument("--browser-path", help="Edge/Chrome/Chromium 可执行文件路径")
@@ -249,17 +267,20 @@ def main() -> int:
         deadline = time.monotonic() + args.timeout
         last_status = 0.0
         while time.monotonic() < deadline:
-            if process.poll() is not None:
-                raise RuntimeError("浏览器提前退出了")
             result = cdp.call("Network.getAllCookies")
             cookies = bilibili_cookies(result.get("cookies", []))
             missing = REQUIRED_COOKIES - cookies.keys()
             if not missing:
-                cookie = format_cookie(cookies)
-                break
+                candidate = format_cookie(cookies)
+                if cookie_is_logged_in(candidate):
+                    cookie = candidate
+                    break
             now = time.monotonic()
             if now - last_status >= 2:
-                print(f"等待登录，还缺少：{', '.join(sorted(missing))}")
+                if missing:
+                    print(f"等待登录，还缺少：{', '.join(sorted(missing))}")
+                else:
+                    print("已检测到 Cookie，等待 B站确认登录状态...")
                 last_status = now
             time.sleep(0.5)
         if not cookie:
@@ -277,6 +298,11 @@ def main() -> int:
         print(f"失败：{exc}", file=sys.stderr)
         return 1
     finally:
+        if cdp and not args.keep_open:
+            try:
+                cdp.call("Browser.close")
+            except Exception:
+                pass
         if cdp:
             cdp.close()
         if not args.keep_open:

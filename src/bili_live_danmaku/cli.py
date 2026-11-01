@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
+import sys
 import threading
 import webbrowser
 from pathlib import Path
@@ -9,6 +11,7 @@ import uvicorn
 
 from . import __version__
 from .app import Runtime, create_app
+from .bili.client import BiliApi, CookieInvalidError, has_login_cookie
 from .config import ConfigStore
 
 
@@ -36,6 +39,32 @@ def _open_browser_later(port: int) -> None:
     timer.start()
 
 
+async def _validate_cookie(runtime: Runtime) -> str | None:
+    cookie = runtime.read_cookie()
+    if not has_login_cookie(cookie):
+        return None
+    api = BiliApi(cookie)
+    try:
+        try:
+            await api.auth_uid()
+        except CookieInvalidError as exc:
+            return str(exc)
+        except Exception as exc:
+            return f"无法验证 B站 Cookie：{exc}"
+    finally:
+        await api.close()
+    return None
+
+
+def _print_cookie_refresh_help(runtime: Runtime, error: str) -> None:
+    print(f"\n[ERROR] {error}", file=sys.stderr)
+    print("请重新获取 B站 Cookie：", file=sys.stderr)
+    print("  uv run tools/get_bili_cookie.py", file=sys.stderr)
+    print("\n扫码登录完成后，再重新启动浮层：", file=sys.stderr)
+    print("  uv run bili-live-danmaku", file=sys.stderr)
+    print(f"\n当前 Cookie 文件：{runtime.cookie_path()}", file=sys.stderr)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if not 1 <= args.port <= 65535:
@@ -53,6 +82,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     if args.room:
         runtime.config.room = args.room
+    if not args.demo:
+        cookie_error = asyncio.run(_validate_cookie(runtime))
+        if cookie_error is not None:
+            _print_cookie_refresh_help(runtime, cookie_error)
+            return 1
 
     app = create_app(runtime)
     if not args.no_browser:

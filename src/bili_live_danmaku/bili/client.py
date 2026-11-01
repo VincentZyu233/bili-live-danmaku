@@ -26,6 +26,10 @@ LIVE_API = "https://api.live.bilibili.com"
 MAIN_API = "https://api.bilibili.com"
 
 
+class CookieInvalidError(RuntimeError):
+    """Raised when a configured Bilibili login cookie is no longer valid."""
+
+
 @dataclass(frozen=True, slots=True)
 class DanmuEndpoint:
     host: str
@@ -52,6 +56,7 @@ class BiliApi:
         self.cookie = cookie.strip()
         self._buvid3 = self._cookie_value("buvid3")
         self._mixin: str | None = None
+        self._nav_payload: dict[str, Any] | None = None
         self._client = httpx.AsyncClient(
             timeout=httpx.Timeout(15.0, connect=10.0),
             follow_redirects=True,
@@ -109,18 +114,35 @@ class BiliApi:
         response.raise_for_status()
         return self._json(response)
 
+    async def _nav(self) -> dict[str, Any]:
+        if self._nav_payload is None:
+            data = await self._get_json(f"{MAIN_API}/x/web-interface/nav")
+            payload = data.get("data")
+            self._nav_payload = payload if isinstance(payload, dict) else {}
+        return self._nav_payload
+
     async def mixin(self) -> str:
         if self._mixin:
             return self._mixin
-        data = await self._get_json(f"{MAIN_API}/x/web-interface/nav")
-        wbi = data.get("data")
-        wbi_img = wbi.get("wbi_img") if isinstance(wbi, dict) else None
+        wbi = await self._nav()
+        wbi_img = wbi.get("wbi_img")
         if not isinstance(wbi_img, dict):
             raise RuntimeError("B站 WBI 密钥响应缺少 wbi_img")
         img = key_from_url(str(wbi_img.get("img_url", "")))
         sub = key_from_url(str(wbi_img.get("sub_url", "")))
         self._mixin = mixin_key(img, sub)
         return self._mixin
+
+    async def auth_uid(self) -> int:
+        nav = await self._nav()
+        if nav.get("isLogin") is not True:
+            if has_login_cookie(self.cookie):
+                raise CookieInvalidError("B站 Cookie 已失效，请重新扫码登录")
+            return 0
+        mid = nav.get("mid")
+        if isinstance(mid, int) and mid > 0:
+            return mid
+        return account_mid(self.cookie)
 
     async def resolve_room(self, room: str) -> int:
         candidate = _room_number(room)
@@ -283,7 +305,7 @@ class BiliClient:
                 max_size=8 * 1024 * 1024,
             ) as websocket:
                 await websocket.send(
-                    auth_packet(real_room, endpoint.token, account_mid(self.cookie))
+                    auth_packet(real_room, endpoint.token, await api.auth_uid())
                 )
                 authenticated = False
                 next_heartbeat = time.monotonic() + 30

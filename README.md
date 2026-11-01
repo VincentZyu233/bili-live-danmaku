@@ -69,6 +69,9 @@ uv run tools/get_bili_cookie.py
 %LOCALAPPDATA%\bili-live-danmaku\cookie.txt
 ```
 
+如果启动时检测到 Cookie 存在但已经在 B站侧失效，程序会拒绝进入重连循环并直接退出，
+同时提示运行 `tools/get_bili_cookie.py` 重新扫码登录。
+
 也可以把已有 Cookie 粘贴到控制台的“手动粘贴 Cookie”，或选择 Cookie 文件后导入。Cookie 按上游方式以明文保存；不要提交到 Git、发到公开聊天或粘贴进 issue。
 
 `--cookie` 直接传值会出现在本机进程参数中，程序会打印警告，日常推荐 `--cookie-file` 或控制台导入。
