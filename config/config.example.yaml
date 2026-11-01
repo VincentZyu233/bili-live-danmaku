@@ -1,45 +1,53 @@
+# 📌 配置版本
 version: 3
 
-# B站直播间
+# 📺 B站直播间
 room: "5861873"
 auto_connect: true
 
-# 本地 WebUI
+# 🌐 本地 WebUI
 server:
   host: "127.0.0.1"
   port: 6161
   open_browser: true
 
-# Cookie 路径相对于项目根目录；建议只放在本地并确保不提交
+# 🍪 Cookie 凭据
+# 路径相对于项目根目录；建议只放在本地并确保不提交
 cookie_file: "config/cookie.txt"
 
-# 历史记录和缓存均保存在项目目录内
+# 💾 存储与历史
+# 历史记录、字体和缓存均保存在项目目录内
 storage:
   data_dir: "data"
 history_lines: 60
 
-# 入场和礼物事件的合并窗口
+# 🧹 消息合并
+# 入场和礼物事件的合并时间窗口
 entry_merge_seconds: 5.0
 gift_merge_seconds: 5.0
 
-# B站断线重连退避
+# 🔁 断线重连
+# B站断线后的重连退避区间
 reconnect:
   base_seconds: 1.0
   max_seconds: 30.0
 
+# 🔊 Edge TTS 弹幕朗读
 tts:
   enabled: false
 
+  # 🌍 多语种策略
   # 混合语言消息优先用单个多语种音色一次合成，避免名字和正文之间出现合成空档
   # 推荐音色：AvaMultilingualNeural 自然女声 / EmmaMultilingualNeural 清晰女声
   #           AndrewMultilingualNeural 自然男声 / BrianMultilingualNeural 沉稳男声
   prefer_multilingual_voice: true
   multilingual_voice: en-US-AvaMultilingualNeural
 
+  # 🧭 语言识别优先级
   # 检测结果不明确时按此顺序回退；只填写下面 voices 中已启用的语言
   language_priority: [zh, en, ja, ko, es, fr, de, pt, ru, it]
 
-  # 推荐音色：
+  # 🎙️ 各语言专属音色
   # zh: XiaoxiaoNeural 温柔女声 / XiaoyiNeural 活泼女声
   #     YunxiNeural 年轻男声 / YunjianNeural 稳重男声 / YunyangNeural 播报男声
   # en: AvaMultilingualNeural 自然女声 / EmmaMultilingualNeural 清晰女声
@@ -64,9 +72,12 @@ tts:
     ru: ru-RU-SvetlanaNeural
     it: it-IT-ElsaNeural
 
+  # 🎚️ 声音参数
   rate: "+0%"
   volume: "+0%"
   pitch: "+0Hz"
+
+  # 📣 朗读事件与内容
   read_kinds:
     - text
     - gift
@@ -76,28 +87,37 @@ tts:
     - membership
   include_username: true
   max_chars: 180
+
+  # 📦 队列与节奏
   queue_size: 32
   min_interval_ms: 300
 
+# 📝 日志
 logging:
   level: INFO
 
+# 🎨 OBS 主题与画布
 theme:
+  # 🖼️ 画布尺寸与间距
   width: 480
   height: 1080
+  panel_padding: 18
+  row_gap: 8
+  max_messages: 80
+
+  # 🔤 字体
   font:
     family: "LXGW WenKai Mono"
     size: 28
     url: null
+
+  # 🧱 面板与配色
   panel_background: "#0b0d12"
   panel_opacity: 0.58
   panel_radius: 28
   panel_border: "#ffffff"
   panel_border_opacity: 0.12
-  panel_padding: 18
-  row_gap: 8
   text_color: "#f4f6fb"
   muted_color: "#aeb5c2"
   accent_color: "#ffd66b"
   show_status: true
-  max_messages: 80
