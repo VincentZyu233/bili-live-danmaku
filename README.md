@@ -101,7 +101,7 @@ config/cookie.txt
 ```yaml
 tts:
   enabled: true
-  prefer_multilingual_voice: true
+  prefer_multilingual_voice: false
   multilingual_voice: en-US-AvaMultilingualNeural
   language_priority: [zh, en, ja, ko, es, fr, de, pt, ru, it]
   voices:
@@ -125,7 +125,7 @@ tts:
   min_interval_ms: 300
 ```
 
-Edge TTS 使用系统默认音频设备播放。混合语言默认优先使用一次多语种合成；关闭后将预生成全部语言片段并拼接为连续音频播放，不再在名字与正文之间等待下一段联网合成。单语言消息仍使用各语言专属音色。消息串行排队，队列满时丢弃最旧整条消息；单次朗读失败不会中断直播连接。启用后弹幕文字会发送给 Microsoft Edge TTS 服务。
+Edge TTS 使用系统默认音频设备播放。默认保留各语言专属音色：日文昵称使用日语声音，中文正文继续使用中文声音；全部片段会预生成并拼接为连续音频，不再在名字与正文之间等待下一段联网合成。开启“多语种优先”后才会把整句交给单个多语种音色。消息串行排队，队列满时丢弃最旧整条消息；单次朗读失败不会中断直播连接。启用后弹幕文字会发送给 Microsoft Edge TTS 服务。
 
 ## ⌨️ 命令行
 
@@ -153,7 +153,7 @@ data/fonts/          上传字体
 data/cache/          图片与 TTS 临时缓存
 ```
 
-0.3.1 使用配置 schema v3；旧 v2 配置会自动迁移，并继续使用项目内数据目录。0.2.0 起不再使用 `%LOCALAPPDATA%/bili-live-danmaku`。Cookie、历史和缓存不会提交到仓库。
+0.3.2 使用配置 schema v3；旧 v2 配置会自动迁移，并继续使用项目内数据目录。0.2.0 起不再使用 `%LOCALAPPDATA%/bili-live-danmaku`。Cookie、历史和缓存不会提交到仓库。
 
 ## 🛠️ 开发
 

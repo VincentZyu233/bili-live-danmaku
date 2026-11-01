@@ -126,8 +126,8 @@ tts:
     )
     loaded = store.load()
     saved = store.path.read_text(encoding="utf-8")
-    assert loaded.tts.prefer_multilingual_voice is True
+    assert loaded.tts.prefer_multilingual_voice is False
     assert loaded.tts.multilingual_voice == "en-US-AvaMultilingualNeural"
-    assert "prefer_multilingual_voice: true" in saved
+    assert "prefer_multilingual_voice: false" in saved
     assert "multilingual_voice: en-US-AvaMultilingualNeural" in saved
     assert "# keep me" in saved

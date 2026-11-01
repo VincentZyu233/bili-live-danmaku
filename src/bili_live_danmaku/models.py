@@ -117,7 +117,7 @@ class TTSVoices(BaseModel):
 
 class TTSSettings(BaseModel):
     enabled: bool = False
-    prefer_multilingual_voice: bool = True
+    prefer_multilingual_voice: bool = False
     multilingual_voice: str = "en-US-AvaMultilingualNeural"
     language_priority: list[str] = Field(default_factory=lambda: list(TTS_LANGUAGE_CODES))
     voices: TTSVoices = Field(default_factory=TTSVoices)

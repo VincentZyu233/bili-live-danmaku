@@ -37,10 +37,11 @@ tts:
   enabled: false
 
   # 🌍 多语种策略
-  # 混合语言消息优先用单个多语种音色一次合成，避免名字和正文之间出现合成空档
+  # 默认关闭：日文昵称和中文正文分别使用对应音色，再通过多段预生成+PCM 拼接连续播放。
+  # 开启后会整句使用下面的多语种音色，可能因开头语言而改变整句朗读语言。
   # 推荐音色：AvaMultilingualNeural 自然女声 / EmmaMultilingualNeural 清晰女声
   #           AndrewMultilingualNeural 自然男声 / BrianMultilingualNeural 沉稳男声
-  prefer_multilingual_voice: true
+  prefer_multilingual_voice: false
   multilingual_voice: en-US-AvaMultilingualNeural
 
   # 🧭 语言识别优先级
