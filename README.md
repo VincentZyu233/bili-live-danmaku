@@ -9,7 +9,8 @@
 目前的开发和测试环境主要是 Windows 11 x64；项目按跨平台 PC 设计，其他平台尚未充分验证。
 
 > [!TIP]
-> 目前仍是初版，主要供自用阶段。欢迎通过 [Issue](https://github.com/VincentZyu233/bili-live-danmaku/issues) 或 PR 反馈问题、改进建议和功能需求。
+> 这是 VincentZyu 的自用版本，主要服务个人直播环境。项目仍在持续迭代，也欢迎体验、提交 Issue 或 PR。
+> 组织主页：[VincentZyuLive](https://github.com/VincentZyuLive)
 
 > 项目参考并移植了 [zlinux-live-util/pw-live-danmaku](https://github.com/zlinux-live-util/pw-live-danmaku) 的协议结论和交互设计。上游的 `pw` 指 PipeWire；本项目使用 OBS 浏览器源，不需要 PipeWire。
 
