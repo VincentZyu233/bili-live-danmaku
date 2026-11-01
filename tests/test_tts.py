@@ -1,9 +1,16 @@
+import asyncio
+from array import array
 from pathlib import Path
 
+import miniaudio
+
+import bili_live_danmaku.tts as tts_module
 from bili_live_danmaku.models import ChatMessage, Fragment, MessageKind, TTSSettings
 from bili_live_danmaku.tts import (
     SpeechRequest,
+    SpeechSegment,
     TTSService,
+    _play_audio_files,
     detect_language,
     message_to_speech,
     message_to_speech_segments,
@@ -115,3 +122,146 @@ def test_event_specific_speech_templates() -> None:
         amount="CN¥30",
     )
     assert message_to_speech(paid, True, 100) == "VincentZyu发送了一条醒目留言：晚上好，金额 30 元"
+
+
+async def test_mixed_language_prefers_multilingual_single_request(
+    tmp_path: Path, monkeypatch
+) -> None:
+    settings = TTSSettings(
+        enabled=True,
+        prefer_multilingual_voice=True,
+        multilingual_voice="en-US-AvaMultilingualNeural",
+    )
+    service = TTSService(settings, tmp_path)
+    request = SpeechRequest(
+        message_id="mixed",
+        segments=(
+            SpeechSegment("かなちゃん", "ja-JP-NanamiNeural", "ja"),
+            SpeechSegment("说：你好", "zh-CN-XiaoxiaoNeural", "zh"),
+        ),
+    )
+    events: list[tuple[str, object]] = []
+
+    async def fake_synthesize(text: str, voice: str) -> Path:
+        events.append(("synth", (text, voice)))
+        return tmp_path / "multilingual.mp3"
+
+    async def fake_play(paths: object) -> None:
+        events.append(("play", paths))
+
+    monkeypatch.setattr(service, "_synthesize_to_file", fake_synthesize)
+    monkeypatch.setattr(service, "_play_files", fake_play)
+    await service._process_request(request)
+
+    assert events[0] == (
+        "synth",
+        ("かなちゃん说：你好", "en-US-AvaMultilingualNeural"),
+    )
+    assert events[1][0] == "play"
+    assert len(events) == 2
+
+
+async def test_multilingual_failure_falls_back_to_pregenerated_segments(
+    tmp_path: Path, monkeypatch
+) -> None:
+    settings = TTSSettings(
+        enabled=True,
+        prefer_multilingual_voice=True,
+        multilingual_voice="en-US-AvaMultilingualNeural",
+    )
+    service = TTSService(settings, tmp_path)
+    request = SpeechRequest(
+        message_id="fallback",
+        segments=(
+            SpeechSegment("かなちゃん", "ja-JP-NanamiNeural", "ja"),
+            SpeechSegment("说：你好", "zh-CN-XiaoxiaoNeural", "zh"),
+        ),
+    )
+    events: list[tuple[str, object]] = []
+
+    async def fake_synthesize(text: str, voice: str) -> Path:
+        events.append(("synth", voice))
+        if voice == "en-US-AvaMultilingualNeural":
+            raise RuntimeError("multilingual failed")
+        return tmp_path / f"{len(events)}.mp3"
+
+    async def fake_play(paths: object) -> None:
+        events.append(("play", len(paths)))
+
+    monkeypatch.setattr(service, "_synthesize_to_file", fake_synthesize)
+    monkeypatch.setattr(service, "_play_files", fake_play)
+    await service._process_request(request)
+
+    assert [event[0] for event in events] == ["synth", "synth", "synth", "play"]
+    assert events[-1] == ("play", 2)
+
+
+async def test_segments_are_all_pregenerated_before_combined_playback(
+    tmp_path: Path, monkeypatch
+) -> None:
+    settings = TTSSettings(
+        enabled=True,
+        prefer_multilingual_voice=False,
+    )
+    service = TTSService(settings, tmp_path)
+    request = SpeechRequest(
+        message_id="segments",
+        segments=(
+            SpeechSegment("かなちゃん", "ja-JP-NanamiNeural", "ja"),
+            SpeechSegment("说：你好", "zh-CN-XiaoxiaoNeural", "zh"),
+        ),
+    )
+    events: list[str] = []
+
+    async def fake_synthesize(text: str, voice: str) -> Path:
+        await asyncio.sleep(0)
+        events.append(f"synth:{voice}")
+        return tmp_path / f"{len(events)}.mp3"
+
+    async def fake_play(paths: object) -> None:
+        events.append(f"play:{len(paths)}")
+
+    monkeypatch.setattr(service, "_synthesize_to_file", fake_synthesize)
+    monkeypatch.setattr(service, "_play_files", fake_play)
+    await service._process_request(request)
+
+    assert events[-1] == "play:2"
+    assert all(event.startswith("synth:") for event in events[:-1])
+
+
+def test_combined_audio_has_no_inserted_silence(monkeypatch, tmp_path: Path) -> None:
+    samples_a = array("h", [100, 200, 300])
+    samples_b = array("h", [400, 500])
+
+    class Decoded:
+        def __init__(self, samples: array[int]) -> None:
+            self.samples = samples
+            self.sample_rate = 1000
+            self.nchannels = 1
+            self.sample_width = 2
+
+    class Device:
+        instances = 0
+
+        def __init__(self) -> None:
+            Device.instances += 1
+
+        def start(self, stream: object) -> None:
+            self.stream = stream
+
+        def close(self) -> None:
+            pass
+
+    decoded = {
+        str(tmp_path / "a.mp3"): Decoded(samples_a),
+        str(tmp_path / "b.mp3"): Decoded(samples_b),
+    }
+    sleeps: list[float] = []
+    monkeypatch.setattr(miniaudio, "decode_file", lambda path: decoded[path])
+    monkeypatch.setattr(miniaudio, "PlaybackDevice", Device)
+    monkeypatch.setattr(tts_module.time, "sleep", sleeps.append)
+
+    _play_audio_files([tmp_path / "a.mp3", tmp_path / "b.mp3"])
+
+    assert Device.instances == 1
+    assert sleeps == [0.085]

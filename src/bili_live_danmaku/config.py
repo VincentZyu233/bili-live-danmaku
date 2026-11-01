@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import hashlib
 import io
 import json
@@ -99,7 +98,11 @@ class ConfigStore:
                 source_version = CONFIG_VERSION
             self._config = config
             self._yaml_document = document
-            if source_version < CONFIG_VERSION:
+            if (
+                source_version < CONFIG_VERSION
+                or not self.path.exists()
+                or self._dump_document(document) != self.path.read_text(encoding="utf-8")
+            ):
                 self.save(config)
             return config
 
@@ -124,17 +127,16 @@ class ConfigStore:
         config, document, source_version = self._read_document(self.path)
         self._config = config
         self._yaml_document = document
-        if source_version < CONFIG_VERSION:
+        if (
+            source_version < CONFIG_VERSION
+            or self._dump_document(document) != self.path.read_text(encoding="utf-8")
+        ):
             self.save(config)
         return config
 
     def save(self, config: AppConfig) -> None:
         config = self._with_defaults(config)
-        document = (
-            copy.deepcopy(self._yaml_document)
-            if self._yaml_document is not None
-            else CommentedMap()
-        )
+        document = self._yaml_document if self._yaml_document is not None else CommentedMap()
         self._sync_mapping(document, config.model_dump(mode="json"))
         self._save_document(config, document)
 
@@ -150,7 +152,7 @@ class ConfigStore:
     def render_yaml(self, config: AppConfig) -> str:
         config = self._with_defaults(config)
         document = (
-            copy.deepcopy(self._yaml_document)
+            self._clone_document(self._yaml_document)
             if self._yaml_document is not None
             else CommentedMap()
         )
@@ -191,7 +193,7 @@ class ConfigStore:
         config = self._with_defaults(AppConfig.model_validate(raw))
         if source_version < CONFIG_VERSION:
             config.version = CONFIG_VERSION
-        document = cast(CommentedMap, copy.deepcopy(raw))
+        document = self._clone_document(raw)
         self._sync_mapping(document, config.model_dump(mode="json"))
         return config, document
 
@@ -210,7 +212,7 @@ class ConfigStore:
         config = self._with_defaults(AppConfig.model_validate(raw))
         if source_version < CONFIG_VERSION:
             config.version = CONFIG_VERSION
-        document = cast(CommentedMap, copy.deepcopy(raw))
+        document = self._clone_document(raw)
         self._sync_mapping(document, config.model_dump(mode="json"))
         return config, document, source_version
 
@@ -233,6 +235,12 @@ class ConfigStore:
         _yaml_round_trip().dump(document, stream)
         return stream.getvalue()
 
+    def _clone_document(self, document: MutableMapping[str, Any]) -> CommentedMap:
+        loaded = _yaml_round_trip().load(self._dump_document(cast(CommentedMap, document)))
+        if not isinstance(loaded, MutableMapping):
+            raise ValueError("配置根节点必须是对象")
+        return cast(CommentedMap, loaded)
+
     @staticmethod
     def _source_version(raw: MutableMapping[str, Any]) -> int:
         value = raw.get("version", 0)
@@ -247,7 +255,7 @@ class ConfigStore:
                     child = CommentedMap()
                     target[key] = child
                 cls._sync_mapping(child, value)
-            else:
+            elif key not in target or target[key] != value:
                 target[key] = value
         for key in tuple(target):
             if key not in values:

@@ -5,6 +5,7 @@ import logging
 import re
 import time
 import uuid
+from array import array
 from collections import deque
 from collections.abc import Generator, Sequence
 from dataclasses import dataclass
@@ -236,16 +237,63 @@ def _pcm_chunks(decoded: Any) -> Generator[bytes, int, None]:
         frame_count = yield chunk
 
 
-def _play_audio_file(path: Path) -> None:
+@dataclass(frozen=True)
+class _CombinedAudio:
+    samples: Any
+    sample_rate: int
+    nchannels: int
+    sample_width: int
+
+
+def _play_audio_files(paths: Sequence[Path]) -> None:
     import miniaudio
 
-    decoded = miniaudio.decode_file(str(path))
+    if not paths:
+        return
+
+    decoded_files: list[tuple[Path, Any]] = []
+    for path in paths:
+        try:
+            decoded_files.append((path, miniaudio.decode_file(str(path))))
+        except Exception:
+            logger.exception("TTS 音频解码失败：%s", path)
+    if not decoded_files:
+        return
+
+    first = decoded_files[0][1]
+    samples = array(first.samples.typecode)
+    samples.extend(first.samples)
+    for path, decoded in decoded_files[1:]:
+        if (
+            decoded.sample_rate != first.sample_rate
+            or decoded.nchannels != first.nchannels
+            or decoded.sample_width != first.sample_width
+        ):
+            try:
+                decoded = miniaudio.decode_file(
+                    str(path),
+                    nchannels=first.nchannels,
+                    sample_rate=first.sample_rate,
+                )
+            except Exception:
+                logger.exception("TTS 音频格式转换失败：%s", path)
+                continue
+        samples.extend(decoded.samples)
+
+    if not samples:
+        return
+    combined = _CombinedAudio(
+        samples=samples,
+        sample_rate=first.sample_rate,
+        nchannels=first.nchannels,
+        sample_width=first.sample_width,
+    )
     device = miniaudio.PlaybackDevice()
     try:
-        stream = _pcm_chunks(decoded)
+        stream = _pcm_chunks(combined)
         next(stream)
         device.start(stream)
-        duration = len(decoded.samples) / max(1, decoded.sample_rate * decoded.nchannels)
+        duration = len(combined.samples) / max(1, combined.sample_rate * combined.nchannels)
         time.sleep(duration + 0.08)
     finally:
         device.close()
@@ -320,23 +368,14 @@ class TTSService:
         voice = _voice_for_language(selected, self.settings)
         await self._speak(text, voice)
 
-    async def _run(self) -> None:
-        while True:
-            request = await self.queue.get()
-            try:
-                for segment in request.segments:
-                    try:
-                        await self._speak(segment.text, segment.voice)
-                    except asyncio.CancelledError:
-                        raise
-                    except Exception:
-                        logger.exception("Edge TTS 朗读失败：%s", segment.language)
-            finally:
-                self.queue.task_done()
-            if self.settings.min_interval_ms:
-                await asyncio.sleep(self.settings.min_interval_ms / 1000)
+    def _should_use_multilingual_voice(self, request: SpeechRequest) -> bool:
+        return bool(
+            self.settings.prefer_multilingual_voice
+            and self.settings.multilingual_voice.strip()
+            and len({segment.voice for segment in request.segments}) > 1
+        )
 
-    async def _speak(self, text: str, voice: str) -> None:
+    async def _synthesize_to_file(self, text: str, voice: str) -> Path:
         import edge_tts
 
         audio_path = self.cache_dir / f"tts-{uuid.uuid4().hex}.mp3"
@@ -349,7 +388,90 @@ class TTSService:
                 pitch=self.settings.pitch,
             )
             await communicate.save(str(audio_path))
-            await asyncio.to_thread(_play_audio_file, audio_path)
+            return audio_path
+        except BaseException:
+            try:
+                audio_path.unlink()
+            except FileNotFoundError:
+                pass
+            raise
+
+    async def _prepare_segment_files(
+        self, segments: Sequence[SpeechSegment]
+    ) -> list[Path]:
+        semaphore = asyncio.Semaphore(2)
+
+        async def prepare(segment: SpeechSegment) -> Path:
+            async with semaphore:
+                return await self._synthesize_to_file(segment.text, segment.voice)
+
+        results = await asyncio.gather(
+            *(prepare(segment) for segment in segments), return_exceptions=True
+        )
+        paths: list[Path] = []
+        for segment, result in zip(segments, results, strict=True):
+            if isinstance(result, BaseException):
+                logger.error(
+                    "Edge TTS 片段合成失败：%s (%s)",
+                    segment.language,
+                    result,
+                )
+                continue
+            paths.append(result)
+        return paths
+
+    async def _play_files(self, paths: Sequence[Path]) -> None:
+        await asyncio.to_thread(_play_audio_files, paths)
+
+    async def _process_request(self, request: SpeechRequest) -> None:
+        if self._should_use_multilingual_voice(request):
+            text = "".join(segment.text for segment in request.segments)
+            try:
+                audio_path = await self._synthesize_to_file(
+                    text, self.settings.multilingual_voice
+                )
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception("多语种 TTS 合成失败，回退到多段音色")
+            else:
+                try:
+                    await self._play_files([audio_path])
+                finally:
+                    try:
+                        audio_path.unlink()
+                    except FileNotFoundError:
+                        pass
+                return
+
+        paths = await self._prepare_segment_files(request.segments)
+        try:
+            await self._play_files(paths)
+        finally:
+            for path in paths:
+                try:
+                    path.unlink()
+                except FileNotFoundError:
+                    pass
+
+    async def _run(self) -> None:
+        while True:
+            request = await self.queue.get()
+            try:
+                await self._process_request(request)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception("Edge TTS 朗读失败")
+            finally:
+                self.queue.task_done()
+            if self.settings.min_interval_ms:
+                await asyncio.sleep(self.settings.min_interval_ms / 1000)
+
+    async def _speak(self, text: str, voice: str) -> None:
+        audio_path = await self._synthesize_to_file(text, voice)
+        try:
+            await self._play_files([audio_path])
         finally:
             try:
                 audio_path.unlink()

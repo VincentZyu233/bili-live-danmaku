@@ -111,3 +111,23 @@ def test_legacy_appdata_is_migrated(tmp_path: Path, monkeypatch) -> None:
     assert loaded.room == "123"
     assert store.cookie_path().read_text(encoding="utf-8").startswith("SESSDATA=")
     assert (store.data_dir / "history" / "123.json").exists()
+
+
+def test_v3_config_adds_new_tts_defaults_and_preserves_comments(tmp_path: Path) -> None:
+    store = ConfigStore(tmp_path)
+    store.path.write_text(
+        """# keep me
+version: 3
+room: "42"
+tts:
+  enabled: true
+""",
+        encoding="utf-8",
+    )
+    loaded = store.load()
+    saved = store.path.read_text(encoding="utf-8")
+    assert loaded.tts.prefer_multilingual_voice is True
+    assert loaded.tts.multilingual_voice == "en-US-AvaMultilingualNeural"
+    assert "prefer_multilingual_voice: true" in saved
+    assert "multilingual_voice: en-US-AvaMultilingualNeural" in saved
+    assert "# keep me" in saved

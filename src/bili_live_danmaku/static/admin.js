@@ -24,7 +24,8 @@ const elements = {
   panelOpacityValue: byId("panelOpacityValue"), panelBorder: byId("panelBorder"), panelBorderOpacity: byId("panelBorderOpacity"),
   panelBorderOpacityValue: byId("panelBorderOpacityValue"), showStatus: byId("showStatus"), fontFamily: byId("fontFamily"),
   fontSize: byId("fontSize"), fontFile: byId("fontFile"), textColor: byId("textColor"), mutedColor: byId("mutedColor"),
-  accentColor: byId("accentColor"), ttsEnabled: byId("ttsEnabled"), ttsLanguagePriority: byId("ttsLanguagePriority"),
+  accentColor: byId("accentColor"), ttsEnabled: byId("ttsEnabled"), ttsPreferMultilingual: byId("ttsPreferMultilingual"),
+  ttsMultilingualVoice: byId("ttsMultilingualVoice"), ttsLanguagePriority: byId("ttsLanguagePriority"),
   voiceGrid: byId("voiceGrid"), ttsVoiceList: byId("ttsVoiceList"), ttsCatalogState: byId("ttsCatalogState"),
   ttsRate: byId("ttsRate"), ttsVolume: byId("ttsVolume"), ttsPitch: byId("ttsPitch"), ttsIncludeUsername: byId("ttsIncludeUsername"),
   ttsMaxChars: byId("ttsMaxChars"), ttsQueueSize: byId("ttsQueueSize"), ttsMinInterval: byId("ttsMinInterval"),
@@ -178,6 +179,8 @@ function collectConfig() {
   for (const language of LANGUAGE_OPTIONS) voices[language.code] = byId(`ttsVoice-${language.code}`).value.trim();
   base.tts = {
     ...(base.tts || {}), enabled: elements.ttsEnabled.checked,
+    prefer_multilingual_voice: elements.ttsPreferMultilingual.checked,
+    multilingual_voice: elements.ttsMultilingualVoice.value.trim(),
     language_priority: parseLanguagePriority(elements.ttsLanguagePriority.value), voices,
     rate: elements.ttsRate.value, volume: elements.ttsVolume.value, pitch: elements.ttsPitch.value,
     read_kinds: [...document.querySelectorAll(".read-kind:checked")].map((input) => input.value),
@@ -222,6 +225,8 @@ function applyConfigToControls(config) {
     elements.accentColor.value = config.theme.accent_color;
     if (state.fontsLoaded) selectFont(config.theme.font);
     elements.ttsEnabled.checked = config.tts.enabled;
+    elements.ttsPreferMultilingual.checked = config.tts.prefer_multilingual_voice;
+    elements.ttsMultilingualVoice.value = config.tts.multilingual_voice || "";
     elements.ttsLanguagePriority.value = config.tts.language_priority.join(", ");
     elements.ttsRate.value = config.tts.rate;
     elements.ttsVolume.value = config.tts.volume;
