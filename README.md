@@ -31,8 +31,8 @@
 - OBS Browser Source 原生透明背景
 - 本地 WebUI 实时预览、状态查看、Cookie 导入和演示消息
 - Cookie 文件、`--cookie-file`、`--cookie` 三种凭据入口
-- YAML 配置统一管理直播、服务、主题、重连和 TTS
-- Microsoft Edge TTS 全事件朗读，可独立关闭并运行在本机默认音频设备
+- WebUI 与 YAML 配置双向绑定，支持字段脏标记、Ctrl+S、YAML 编辑和外部文件自动监听
+- Microsoft Edge TTS 全事件朗读，按中文、英语、日语等十种语言配置独立音色
 - 断线自动重连；未配置 Cookie 时使用匿名模式
 
 ## 🚀 启动
@@ -44,7 +44,7 @@ uv sync
 uv run bili-live-danmaku
 ```
 
-首次启动会从 `config/config.example.yaml` 创建 `config/config.yaml`。修改 YAML 后重启服务生效。
+首次启动会从 `config/config.example.yaml` 创建 `config/config.yaml`。WebUI 修改按 `Ctrl+S` 保存；直接编辑 YAML 时服务会自动监听并应用，端口、监听地址和数据目录等进程级字段需重启。
 
 命令会启动 `http://127.0.0.1:6161/admin` 并自动打开控制台。输入直播间号或直播地址后保存，即可开始连接。
 
@@ -101,7 +101,18 @@ config/cookie.txt
 ```yaml
 tts:
   enabled: true
-  voice: zh-CN-XiaoxiaoNeural
+  language_priority: [zh, en, ja, ko, es, fr, de, pt, ru, it]
+  voices:
+    zh: zh-CN-XiaoxiaoNeural
+    en: en-US-AvaMultilingualNeural
+    ja: ja-JP-NanamiNeural
+    ko: ko-KR-SunHiNeural
+    es: es-ES-XimenaNeural
+    fr: fr-FR-VivienneMultilingualNeural
+    de: de-DE-SeraphinaMultilingualNeural
+    pt: pt-BR-ThalitaMultilingualNeural
+    ru: ru-RU-SvetlanaNeural
+    it: it-IT-ElsaNeural
   rate: "+0%"
   volume: "+0%"
   pitch: "+0Hz"
@@ -112,7 +123,7 @@ tts:
   min_interval_ms: 300
 ```
 
-Edge TTS 使用系统默认音频设备播放。消息会串行排队，队列满时丢弃最旧任务；单次朗读失败不会中断直播连接。启用后弹幕文字会发送给 Microsoft Edge TTS 服务。
+Edge TTS 使用系统默认音频设备播放。昵称与正文会分别识别语言，日文假名昵称可使用独立日语声音；正文按句切分并为相邻同音色片段合并。消息串行排队，队列满时丢弃最旧整条消息；单次朗读失败不会中断直播连接。启用后弹幕文字会发送给 Microsoft Edge TTS 服务。
 
 ## ⌨️ 命令行
 
@@ -140,7 +151,7 @@ data/fonts/          上传字体
 data/cache/          图片与 TTS 临时缓存
 ```
 
-0.2.0 不再使用 `%LOCALAPPDATA%/bili-live-danmaku`。Cookie、历史和缓存不会提交到仓库。
+0.3.0 使用配置 schema v3；旧 v2 配置会自动迁移，并继续使用项目内数据目录。0.2.0 起不再使用 `%LOCALAPPDATA%/bili-live-danmaku`。Cookie、历史和缓存不会提交到仓库。
 
 ## 🛠️ 开发
 

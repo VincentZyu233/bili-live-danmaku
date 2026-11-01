@@ -16,17 +16,20 @@ def test_default_config_uses_local_cookie_file(tmp_path: Path) -> None:
     assert store.data_dir == tmp_path / "data"
     assert store.path == tmp_path / "config" / "config.yaml"
     assert store.path.exists()
+    assert config.version == 3
 
 
 def test_config_round_trip(tmp_path: Path) -> None:
     store = ConfigStore(tmp_path)
     config = AppConfig(room="123", history_lines=3)
     config.theme.panel_radius = 42
+    config.tts.voices.ja = "ja-JP-KeitaNeural"
     store.save(config)
     loaded = store.load()
     assert loaded.room == "123"
     assert loaded.history_lines == 3
     assert loaded.theme.panel_radius == 42
+    assert loaded.tts.voices.ja == "ja-JP-KeitaNeural"
 
 
 def test_broken_config_is_replaced(tmp_path: Path) -> None:
@@ -43,9 +46,54 @@ def test_example_config_is_copied_to_local_yaml(tmp_path: Path) -> None:
     shutil.copy2(source, tmp_path / "config" / "config.example.yaml")
     store = ConfigStore(tmp_path)
     loaded = store.load()
-    assert loaded.version == 2
+    assert loaded.version == 3
     assert store.path.exists()
     assert store.cookie_path() == tmp_path / "config" / "cookie.txt"
+
+
+def test_v2_config_migrates_voice_map_and_preserves_comments(tmp_path: Path) -> None:
+    store = ConfigStore(tmp_path)
+    store.path.write_text(
+        """# keep this comment
+version: 2
+room: "42"
+tts:
+  enabled: true
+  voice: zh-CN-YunxiNeural
+  rate: "+5%"
+""",
+        encoding="utf-8",
+    )
+    loaded = store.load()
+    saved = store.path.read_text(encoding="utf-8")
+    assert loaded.version == 3
+    assert loaded.tts.rate == "+5%"
+    assert loaded.tts.voices.zh == "zh-CN-XiaoxiaoNeural"
+    assert "voice: zh-CN-YunxiNeural" not in saved
+    assert "voices:" in saved
+    assert "# keep this comment" in saved
+
+
+def test_form_save_preserves_existing_yaml_comments(tmp_path: Path) -> None:
+    store = ConfigStore(tmp_path)
+    source = """# top comment
+version: 3
+room: "1"
+tts:
+  # voice comment
+  enabled: false
+  language_priority: [zh, en]
+  voices:
+    zh: zh-CN-XiaoxiaoNeural
+"""
+    store.path.write_text(source, encoding="utf-8")
+    config = store.load()
+    config.room = "2"
+    store.save(config)
+    saved = store.path.read_text(encoding="utf-8")
+    assert "# top comment" in saved
+    assert "# voice comment" in saved
+    assert 'room: "2"' in saved
 
 
 def test_legacy_appdata_is_migrated(tmp_path: Path, monkeypatch) -> None:
@@ -59,6 +107,7 @@ def test_legacy_appdata_is_migrated(tmp_path: Path, monkeypatch) -> None:
 
     store = ConfigStore(tmp_path / "project")
     loaded = store.load()
+    assert loaded.version == 3
     assert loaded.room == "123"
     assert store.cookie_path().read_text(encoding="utf-8").startswith("SESSDATA=")
     assert (store.data_dir / "history" / "123.json").exists()

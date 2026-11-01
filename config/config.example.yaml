@@ -1,4 +1,4 @@
-version: 2
+version: 3
 
 # B站直播间
 room: "5861873"
@@ -29,7 +29,35 @@ reconnect:
 
 tts:
   enabled: false
-  voice: "zh-CN-XiaoxiaoNeural"
+
+  # 检测结果不明确时按此顺序回退；只填写下面 voices 中已启用的语言
+  language_priority: [zh, en, ja, ko, es, fr, de, pt, ru, it]
+
+  # 推荐音色：
+  # zh: XiaoxiaoNeural 温柔女声 / XiaoyiNeural 活泼女声
+  #     YunxiNeural 年轻男声 / YunjianNeural 稳重男声 / YunyangNeural 播报男声
+  # en: AvaMultilingualNeural 自然女声 / EmmaMultilingualNeural 清晰女声
+  #     AndrewMultilingualNeural 自然男声 / BrianMultilingualNeural 沉稳男声
+  # ja: NanamiNeural 友好女声 / KeitaNeural 男声
+  # ko: SunHiNeural 女声 / InJoonNeural 男声 / HyunsuMultilingualNeural 多语种男声
+  # es: XimenaNeural 女声 / AlvaroNeural 男声 / ElviraNeural 成熟女声
+  # fr: VivienneMultilingualNeural 女声 / RemyMultilingualNeural 男声
+  # de: SeraphinaMultilingualNeural 女声 / FlorianMultilingualNeural 男声
+  # pt: ThalitaMultilingualNeural 女声 / AntonioNeural 男声
+  # ru: SvetlanaNeural 女声 / DmitryNeural 男声
+  # it: ElsaNeural 女声 / GiuseppeMultilingualNeural 多语种男声
+  voices:
+    zh: zh-CN-XiaoxiaoNeural
+    en: en-US-AvaMultilingualNeural
+    ja: ja-JP-NanamiNeural
+    ko: ko-KR-SunHiNeural
+    es: es-ES-XimenaNeural
+    fr: fr-FR-VivienneMultilingualNeural
+    de: de-DE-SeraphinaMultilingualNeural
+    pt: pt-BR-ThalitaMultilingualNeural
+    ru: ru-RU-SvetlanaNeural
+    it: it-IT-ElsaNeural
+
   rate: "+0%"
   volume: "+0%"
   pitch: "+0Hz"

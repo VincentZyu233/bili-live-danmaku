@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bili-live-danmaku"
-version = "0.2.0"
+version = "0.3.0"
 description = "Transparent Bilibili live chat overlay for OBS Browser Source"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -16,9 +16,10 @@ dependencies = [
   "edge-tts>=7.3.1",
   "fastapi>=0.115.0",
   "httpx>=0.28.0",
+  "langdetect>=1.0.9",
   "miniaudio>=1.71",
   "python-multipart>=0.0.20",
-  "pyyaml>=6.0",
+  "ruamel.yaml>=0.18.6",
   "uvicorn[standard]>=0.34.0",
   "websockets>=15.0",
 ]
@@ -32,14 +33,10 @@ dev = [
   "pytest>=8.3.0",
   "pytest-asyncio>=0.25.0",
   "ruff>=0.11.0",
-  "types-pyyaml>=6.0",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/bili_live_danmaku"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"src/bili_live_danmaku/static" = "bili_live_danmaku/static"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -60,5 +57,5 @@ packages = ["bili_live_danmaku"]
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-module = ["brotli", "miniaudio", "yaml"]
+module = ["brotli", "langdetect", "miniaudio", "ruamel.yaml"]
 ignore_missing_imports = true

@@ -444,3 +444,195 @@ input[type="range"] {
     max-height: 680px;
   }
 }
+
+[hidden] {
+  display: none !important;
+}
+
+.version-badge,
+.restart-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 1px solid rgba(111, 231, 221, 0.28);
+  border-radius: 999px;
+  background: rgba(111, 231, 221, 0.08);
+  color: #9cf5eb;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.button kbd {
+  margin-left: 4px;
+  padding: 2px 5px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.12);
+  font-size: 10px;
+}
+
+.dirty-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: #ffd166;
+  box-shadow: 0 0 10px rgba(255, 209, 102, 0.7);
+}
+
+.field.is-dirty > span::after,
+.switch-row.is-dirty > span::after,
+.checkbox-grid.is-dirty .checkbox-grid-title::after {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 7px;
+  border-radius: 50%;
+  background: #ffd166;
+  box-shadow: 0 0 10px rgba(255, 209, 102, 0.7);
+}
+
+.conflict-bar,
+.yaml-error {
+  margin-bottom: 18px;
+  padding: 13px 15px;
+  border: 1px solid rgba(255, 198, 92, 0.35);
+  border-radius: 13px;
+  background: rgba(255, 184, 77, 0.1);
+  color: #ffe0a7;
+  font-size: 13px;
+}
+
+.conflict-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.yaml-error {
+  margin-bottom: 14px;
+  white-space: pre-wrap;
+  font-size: 12px;
+}
+
+.voice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.voice-field input {
+  font-size: 12px;
+}
+
+.checkbox-grid {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  color: #c8d0dd;
+  font-size: 13px;
+}
+
+.checkbox-grid-title {
+  flex-basis: 100%;
+  color: #c8d0dd;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.checkbox-grid label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.checkbox-grid input,
+.switch-row input {
+  accent-color: var(--cyan);
+}
+
+.tts-test-row {
+  margin-top: 18px;
+}
+
+.yaml-toolbar,
+.yaml-tabs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.yaml-toolbar {
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.yaml-tab {
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.yaml-tab.active {
+  border-color: rgba(111, 194, 255, 0.45);
+  background: rgba(90, 168, 255, 0.12);
+  color: #dceeff;
+}
+
+.file-path {
+  margin-bottom: 8px;
+  overflow: hidden;
+  color: #7f899b;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.yaml-editor {
+  width: 100%;
+  min-height: 560px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  outline: none;
+  background: rgba(4, 7, 12, 0.72);
+  color: #e9f2ff;
+  font-size: 12px;
+  line-height: 1.62;
+  resize: vertical;
+  tab-size: 2;
+}
+
+.yaml-editor[readonly] {
+  color: #b8c8dc;
+  background: rgba(4, 7, 12, 0.48);
+}
+
+@media (max-width: 760px) {
+  .conflict-bar,
+  .yaml-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .voice-grid {
+    grid-template-columns: 1fr;
+  }
+}

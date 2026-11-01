@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Bili Live Danmaku · 控制台</title>
     <link rel="icon" type="image/png" href="/static/assets/bilibili-avatar.png" />
-    <link rel="stylesheet" href="/static/admin.css?v=lxgw-2" />
+    <link rel="stylesheet" href="/static/admin.css?v=0.3.0-1" />
   </head>
   <body>
     <div class="shell">
@@ -14,6 +14,7 @@
           <p class="eyebrow">OBS OVERLAY CONSOLE</p>
           <div class="title-line">
             <h1>Bili Live Danmaku</h1>
+            <span class="version-badge">v0.3.0</span>
             <a class="github-repo-link" href="https://github.com/VincentZyuLive/bili-live-danmaku" target="_blank" rel="noopener noreferrer" aria-label="打开 GitHub 仓库">
               <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.64 0 8.13c0 3.59 2.29 6.64 5.47 7.72.4.07.55-.18.55-.39v-1.51c-2.22.49-2.69-.96-2.69-.96-.36-.94-.89-1.19-.89-1.19-.73-.5.05-.49.05-.49.8.06 1.23.84 1.23.84.72 1.25 1.88.89 2.34.68.07-.53.28-.89.51-1.1-1.77-.2-3.64-.9-3.64-4.02 0-.89.31-1.61.83-2.18-.08-.2-.36-1.03.08-2.15 0 0 .67-.22 2.2.83A7.5 7.5 0 0 1 8 3.91c.68 0 1.36.09 2 .27 1.53-1.05 2.2-.83 2.2-.83.44 1.12.16 1.95.08 2.15.52.57.83 1.29.83 2.18 0 3.13-1.87 3.82-3.65 4.02.29.25.54.74.54 1.49v2.21c0 .21.15.47.55.39A8.15 8.15 0 0 0 16 8.13C16 3.64 12.42 0 8 0Z"/></svg>
               <span>GitHub</span>
@@ -24,11 +25,22 @@
         <div class="topbar-actions">
           <span id="connectionBadge" class="badge">读取状态中</span>
           <button id="openOverlayBtn" class="button secondary" type="button">打开浮层</button>
-          <button id="saveBtn" class="button primary" type="button">保存配置</button>
+          <button id="saveBtn" class="button primary" type="button">
+            <span>保存配置</span>
+            <span id="saveDirtyDot" class="dirty-dot" hidden></span>
+            <kbd>Ctrl+S</kbd>
+          </button>
         </div>
       </header>
 
       <div id="notice" class="notice" role="status" aria-live="polite"></div>
+      <div id="conflictBar" class="conflict-bar" hidden>
+        <span>配置已在外部修改，当前草稿尚未保存。</span>
+        <div class="button-row">
+          <button id="loadConflictBtn" class="button secondary small" type="button">载入磁盘版本</button>
+          <button id="saveConflictBtn" class="button primary small" type="button">保存当前草稿</button>
+        </div>
+      </div>
 
       <main class="workspace">
         <div class="settings-column">
@@ -43,21 +55,18 @@
 
             <label class="field wide">
               <span>直播间号或地址</span>
-              <input id="room" type="text" placeholder="例如 5861873 或 https://live.bilibili.com/5861873" />
+              <input id="room" data-path="room" type="text" placeholder="例如 5861873 或 https://live.bilibili.com/5861873" />
             </label>
-
             <label class="field wide">
               <span>Cookie 文件路径</span>
-              <input id="cookieFile" type="text" spellcheck="false" />
-              <small>明文保存。建议保留在应用数据目录，不要提交到 Git。</small>
+              <input id="cookieFile" data-path="cookie_file" type="text" spellcheck="false" />
+              <small>Cookie 内容独立保存，不会写入 YAML。</small>
             </label>
-
             <label class="field wide">
               <span>手动粘贴 Cookie</span>
               <textarea id="cookieText" rows="3" spellcheck="false" placeholder="SESSDATA=...; bili_jct=...; DedeUserID=..."></textarea>
               <small>导入后写入上面的文件；页面不会回显已保存的 Cookie。</small>
             </label>
-
             <div class="button-row">
               <label class="button secondary file-button">
                 从文件导入
@@ -67,22 +76,22 @@
               <button id="deleteCookieBtn" class="button danger" type="button">删除 Cookie</button>
             </div>
 
-            <div class="inline-fields">
+            <div class="inline-fields three">
               <label class="field">
                 <span>历史行数</span>
-                <input id="historyLines" class="preview-field" type="number" min="0" max="2000" step="1" />
+                <input id="historyLines" class="preview-field" data-path="history_lines" type="number" min="0" max="2000" step="1" />
               </label>
               <label class="field">
                 <span>入场合并（秒）</span>
-                <input id="entryMerge" type="number" min="0" max="60" step="0.5" />
+                <input id="entryMerge" data-path="entry_merge_seconds" type="number" min="0" max="60" step="0.5" />
               </label>
               <label class="field">
                 <span>礼物合并（秒）</span>
-                <input id="giftMerge" type="number" min="0" max="60" step="0.5" />
+                <input id="giftMerge" data-path="gift_merge_seconds" type="number" min="0" max="60" step="0.5" />
               </label>
             </div>
             <label class="switch-row">
-              <input id="autoConnect" type="checkbox" />
+              <input id="autoConnect" data-path="auto_connect" type="checkbox" />
               <span>启动时自动连接直播间</span>
             </label>
             <div class="button-row">
@@ -99,58 +108,23 @@
               </div>
             </div>
             <div class="inline-fields three">
-              <label class="field">
-                <span>画布宽度</span>
-                <input id="width" class="preview-field" type="number" min="240" max="1920" />
-              </label>
-              <label class="field">
-                <span>画布高度</span>
-                <input id="height" class="preview-field" type="number" min="240" max="1920" />
-              </label>
-              <label class="field">
-                <span>圆角</span>
-                <input id="panelRadius" class="preview-field" type="number" min="0" max="80" />
-              </label>
+              <label class="field"><span>画布宽度</span><input id="width" class="preview-field" data-path="theme.width" type="number" min="240" max="1920" /></label>
+              <label class="field"><span>画布高度</span><input id="height" class="preview-field" data-path="theme.height" type="number" min="240" max="1920" /></label>
+              <label class="field"><span>圆角</span><input id="panelRadius" class="preview-field" data-path="theme.panel_radius" type="number" min="0" max="80" /></label>
             </div>
             <div class="inline-fields three">
-              <label class="field">
-                <span>内边距</span>
-                <input id="panelPadding" class="preview-field" type="number" min="0" max="64" />
-              </label>
-              <label class="field">
-                <span>行间距</span>
-                <input id="rowGap" class="preview-field" type="number" min="0" max="32" />
-              </label>
-              <label class="field">
-                <span>最多行数</span>
-                <input id="maxMessages" class="preview-field" type="number" min="5" max="500" />
-              </label>
+              <label class="field"><span>内边距</span><input id="panelPadding" class="preview-field" data-path="theme.panel_padding" type="number" min="0" max="64" /></label>
+              <label class="field"><span>行间距</span><input id="rowGap" class="preview-field" data-path="theme.row_gap" type="number" min="0" max="32" /></label>
+              <label class="field"><span>最多行数</span><input id="maxMessages" class="preview-field" data-path="theme.max_messages" type="number" min="5" max="500" /></label>
             </div>
             <div class="inline-fields three color-grid">
-              <label class="field">
-                <span>底板颜色</span>
-                <input id="panelBackground" class="preview-field color-input" type="color" />
-              </label>
-              <label class="field">
-                <span>底板透明度</span>
-                <input id="panelOpacity" class="preview-field" type="range" min="0" max="1" step="0.01" />
-                <output id="panelOpacityValue"></output>
-              </label>
-              <label class="field">
-                <span>边框透明度</span>
-                <input id="panelBorderOpacity" class="preview-field" type="range" min="0" max="1" step="0.01" />
-                <output id="panelBorderOpacityValue"></output>
-              </label>
+              <label class="field"><span>底板颜色</span><input id="panelBackground" class="preview-field color-input" data-path="theme.panel_background" type="color" /></label>
+              <label class="field"><span>底板透明度</span><input id="panelOpacity" class="preview-field" data-path="theme.panel_opacity" type="range" min="0" max="1" step="0.01" /><output id="panelOpacityValue"></output></label>
+              <label class="field"><span>边框透明度</span><input id="panelBorderOpacity" class="preview-field" data-path="theme.panel_border_opacity" type="range" min="0" max="1" step="0.01" /><output id="panelBorderOpacityValue"></output></label>
             </div>
             <div class="inline-fields two">
-              <label class="field">
-                <span>边框颜色</span>
-                <input id="panelBorder" class="preview-field color-input" type="color" />
-              </label>
-              <label class="switch-row compact">
-                <input id="showStatus" class="preview-field" type="checkbox" />
-                <span>显示连接状态</span>
-              </label>
+              <label class="field"><span>边框颜色</span><input id="panelBorder" class="preview-field color-input" data-path="theme.panel_border" type="color" /></label>
+              <label class="switch-row compact"><input id="showStatus" class="preview-field" data-path="theme.show_status" type="checkbox" /><span>显示连接状态</span></label>
             </div>
           </section>
 
@@ -162,36 +136,129 @@
               </div>
             </div>
             <div class="inline-fields two">
-              <label class="field">
-                <span>字体</span>
-                <select id="fontFamily" class="preview-field"></select>
-              </label>
-              <label class="field">
-                <span>字号（px）</span>
-                <input id="fontSize" class="preview-field" type="number" min="12" max="72" />
-              </label>
+              <label class="field"><span>字体</span><select id="fontFamily" class="preview-field" data-path="theme.font.family"></select></label>
+              <label class="field"><span>字号（px）</span><input id="fontSize" class="preview-field" data-path="theme.font.size" type="number" min="12" max="72" /></label>
             </div>
             <div class="button-row">
-              <label class="button secondary file-button">
-                选择字体文件
-                <input id="fontFile" type="file" accept=".ttf,.otf,.ttc,.woff,.woff2" hidden />
-              </label>
+              <label class="button secondary file-button">选择字体文件<input id="fontFile" type="file" accept=".ttf,.otf,.ttc,.woff,.woff2" hidden /></label>
               <button id="uploadFontBtn" class="button secondary" type="button">上传并应用字体</button>
-              <small>支持 CJK 字体大文件，单个字体最大 64 MB；选择文件后会自动上传。</small>
+              <small>支持 CJK 字体大文件，单个字体最大 64 MB。</small>
             </div>
             <div class="inline-fields three color-grid">
-              <label class="field">
-                <span>正文</span>
-                <input id="textColor" class="preview-field color-input" type="color" />
-              </label>
-              <label class="field">
-                <span>次要文字</span>
-                <input id="mutedColor" class="preview-field color-input" type="color" />
-              </label>
-              <label class="field">
-                <span>强调色</span>
-                <input id="accentColor" class="preview-field color-input" type="color" />
-              </label>
+              <label class="field"><span>正文</span><input id="textColor" class="preview-field color-input" data-path="theme.text_color" type="color" /></label>
+              <label class="field"><span>次要文字</span><input id="mutedColor" class="preview-field color-input" data-path="theme.muted_color" type="color" /></label>
+              <label class="field"><span>强调色</span><input id="accentColor" class="preview-field color-input" data-path="theme.accent_color" type="color" /></label>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">EDGE TTS</p>
+                <h2>弹幕朗读与多语言音色</h2>
+              </div>
+              <span id="ttsCatalogState" class="mini-badge">音色读取中</span>
+            </div>
+            <label class="switch-row">
+              <input id="ttsEnabled" data-path="tts.enabled" type="checkbox" />
+              <span>启用 Edge TTS 弹幕朗读</span>
+            </label>
+            <label class="field wide">
+              <span>语言优先级</span>
+              <input id="ttsLanguagePriority" data-path="tts.language_priority" type="text" spellcheck="false" placeholder="zh, en, ja, ko, es, fr, de, pt, ru, it" />
+              <small>逗号分隔。识别歧义或失败时按此顺序回退，第一项也是默认语言。</small>
+            </label>
+            <div id="voiceGrid" class="voice-grid"></div>
+            <div class="inline-fields three">
+              <label class="field"><span>语速</span><input id="ttsRate" data-path="tts.rate" type="text" /></label>
+              <label class="field"><span>音量</span><input id="ttsVolume" data-path="tts.volume" type="text" /></label>
+              <label class="field"><span>音调</span><input id="ttsPitch" data-path="tts.pitch" type="text" /></label>
+            </div>
+            <div class="checkbox-grid" data-path="tts.read_kinds">
+              <span class="checkbox-grid-title">朗读事件</span>
+              <label><input class="read-kind" type="checkbox" value="text" /> 弹幕</label>
+              <label><input class="read-kind" type="checkbox" value="gift" /> 礼物</label>
+              <label><input class="read-kind" type="checkbox" value="entry" /> 入场</label>
+              <label><input class="read-kind" type="checkbox" value="like" /> 点赞</label>
+              <label><input class="read-kind" type="checkbox" value="paid" /> SC</label>
+              <label><input class="read-kind" type="checkbox" value="membership" /> 舰长</label>
+            </div>
+            <label class="switch-row">
+              <input id="ttsIncludeUsername" data-path="tts.include_username" type="checkbox" />
+              <span>朗读观众昵称</span>
+            </label>
+            <div class="inline-fields three">
+              <label class="field"><span>最大字数</span><input id="ttsMaxChars" data-path="tts.max_chars" type="number" min="1" max="1000" /></label>
+              <label class="field"><span>队列大小</span><input id="ttsQueueSize" data-path="tts.queue_size" type="number" min="1" max="500" /></label>
+              <label class="field"><span>消息间隔（ms）</span><input id="ttsMinInterval" data-path="tts.min_interval_ms" type="number" min="0" max="10000" /></label>
+            </div>
+            <div class="inline-fields two tts-test-row">
+              <label class="field"><span>测试文本</span><input id="ttsTestText" type="text" value="弹幕朗读测试成功" /></label>
+              <label class="field"><span>测试语言</span><select id="ttsTestLanguage"></select></label>
+            </div>
+            <div class="button-row">
+              <button id="testTtsBtn" class="button secondary" type="button">测试朗读</button>
+              <small>测试前会先保存当前配置；朗读使用系统默认音频设备。</small>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">RUNTIME</p>
+                <h2>服务与高级参数</h2>
+              </div>
+              <span class="mini-badge">进程级字段需重启</span>
+            </div>
+            <div class="inline-fields two">
+              <label class="field"><span>监听地址 <em class="restart-badge">重启</em></span><input id="serverHost" data-path="server.host" type="text" /></label>
+              <label class="field"><span>端口 <em class="restart-badge">重启</em></span><input id="serverPort" data-path="server.port" type="number" min="1" max="65535" /></label>
+            </div>
+            <label class="switch-row">
+              <input id="serverOpenBrowser" data-path="server.open_browser" type="checkbox" />
+              <span>启动时自动打开 WebUI <em class="restart-badge">重启</em></span>
+            </label>
+            <div class="inline-fields two">
+              <label class="field"><span>数据目录 <em class="restart-badge">重启</em></span><input id="storageDataDir" data-path="storage.data_dir" type="text" /></label>
+              <label class="field"><span>日志级别</span><select id="loggingLevel" data-path="logging.level"><option>DEBUG</option><option>INFO</option><option>WARNING</option><option>ERROR</option></select></label>
+            </div>
+            <div class="inline-fields three">
+              <label class="field"><span>重连下限（秒）</span><input id="reconnectBase" data-path="reconnect.base_seconds" type="number" min="0.1" max="60" step="0.1" /></label>
+              <label class="field"><span>重连上限（秒）</span><input id="reconnectMax" data-path="reconnect.max_seconds" type="number" min="1" max="300" step="1" /></label>
+              <label class="field"><span>配置版本</span><input id="configVersion" type="text" readonly /></label>
+            </div>
+          </section>
+
+          <section class="card yaml-card">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">CONFIG SOURCE</p>
+                <h2>YAML 双向绑定</h2>
+              </div>
+              <span id="configRevision" class="mini-badge">revision: -</span>
+            </div>
+            <div class="yaml-toolbar">
+              <div class="yaml-tabs" role="tablist">
+                <button id="currentYamlTab" class="yaml-tab active" type="button">当前配置 <span id="currentYamlDirtyDot" class="dirty-dot" hidden></span></button>
+                <button id="exampleYamlTab" class="yaml-tab" type="button">示例配置</button>
+              </div>
+              <div class="button-row">
+                <button id="reloadConfigBtn" class="button secondary small" type="button">重新读取</button>
+                <button id="applyYamlBtn" class="button secondary small" type="button">校验并应用</button>
+              </div>
+            </div>
+            <div id="yamlError" class="yaml-error" hidden></div>
+            <div id="currentYamlPanel">
+              <p id="configPath" class="file-path"></p>
+              <textarea id="yamlEditor" class="yaml-editor" spellcheck="false" aria-label="当前 YAML 配置"></textarea>
+            </div>
+            <div id="exampleYamlPanel" hidden>
+              <p id="examplePath" class="file-path"></p>
+              <textarea id="yamlExample" class="yaml-editor" readonly aria-label="示例 YAML 配置"></textarea>
+              <div class="button-row">
+                <button id="loadExampleBtn" class="button secondary small" type="button">载入为草稿</button>
+                <small>示例配置只读；载入后仍需保存才会写入正式文件。</small>
+              </div>
             </div>
           </section>
         </div>
@@ -222,6 +289,7 @@
         </aside>
       </main>
     </div>
-    <script type="module" src="/static/admin.js?v=lxgw-2"></script>
+    <datalist id="ttsVoiceList"></datalist>
+    <script type="module" src="/static/admin.js?v=0.3.0-1"></script>
   </body>
 </html>

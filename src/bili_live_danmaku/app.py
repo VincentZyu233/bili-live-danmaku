@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
 import time
 import uuid
@@ -13,7 +14,7 @@ from urllib.parse import urlparse
 
 from fastapi import FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, RedirectResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from .bili.client import BiliClient, has_login_cookie
 from .config import ConfigStore, atomic_write_text
@@ -26,15 +27,113 @@ from .models import (
     EventEnvelope,
     Fragment,
     MessageKind,
+    TTSVoices,
     UserType,
 )
 from .tts import TTSService
 
 STATIC_DIR = Path(__file__).parent / "static"
+CONFIG_WATCH_INTERVAL_SECONDS = 1.0
+
+_TTS_VOICE_CACHE: list[dict[str, str]] | None = None
+_TTS_VOICE_LOCK = asyncio.Lock()
+_TTS_VOICE_LOCALES = {
+    "zh": "zh-CN",
+    "en": "en-US",
+    "ja": "ja-JP",
+    "ko": "ko-KR",
+    "es": "es-ES",
+    "fr": "fr-FR",
+    "de": "de-DE",
+    "pt": "pt-BR",
+    "ru": "ru-RU",
+    "it": "it-IT",
+}
+
+
+def _fallback_tts_voices() -> list[dict[str, str]]:
+    defaults = TTSVoices()
+    return [
+        {
+            "short_name": defaults.get(language),
+            "locale": locale,
+            "gender": "",
+            "friendly_name": defaults.get(language),
+            "default_for": language,
+        }
+        for language, locale in _TTS_VOICE_LOCALES.items()
+    ]
+
+
+async def _list_tts_voices() -> tuple[list[dict[str, str]], bool]:
+    global _TTS_VOICE_CACHE
+    if _TTS_VOICE_CACHE is not None:
+        return _TTS_VOICE_CACHE, False
+    async with _TTS_VOICE_LOCK:
+        if _TTS_VOICE_CACHE is not None:
+            return _TTS_VOICE_CACHE, False
+        try:
+            import edge_tts
+
+            voices = await edge_tts.list_voices()
+        except Exception:
+            return _fallback_tts_voices(), True
+        _TTS_VOICE_CACHE = sorted(
+            [
+                {
+                    "short_name": voice["ShortName"],
+                    "locale": voice["Locale"],
+                    "gender": voice["Gender"],
+                    "friendly_name": voice.get("FriendlyName", voice["ShortName"]),
+                    "default_for": "",
+                }
+                for voice in voices
+            ],
+            key=lambda voice: (voice["locale"], voice["short_name"]),
+        )
+        return _TTS_VOICE_CACHE, False
 
 
 class CookiePayload(BaseModel):
     cookie: str = Field(min_length=1, max_length=16_384)
+
+
+class ConfigDocumentPayload(BaseModel):
+    config: AppConfig
+    yaml_text: str
+    example_yaml: str | None
+    config_path: str
+    example_path: str
+    revision: str
+
+
+class ConfigFormSavePayload(BaseModel):
+    config: AppConfig
+    base_revision: str
+
+
+class ConfigYamlSavePayload(BaseModel):
+    yaml: str
+    base_revision: str
+
+
+class ConfigYamlValidatePayload(BaseModel):
+    yaml: str
+
+
+class ConfigRenderPayload(BaseModel):
+    config: AppConfig
+
+
+class TTSTestPayload(BaseModel):
+    text: str = Field(default="弹幕朗读测试成功", min_length=1, max_length=500)
+    language: str | None = None
+
+
+class ConfigConflictError(ValueError):
+    def __init__(self, document: ConfigDocumentPayload) -> None:
+        super().__init__("配置已被外部修改")
+        self.document = document
 
 
 class BroadcastHub:
@@ -101,10 +200,16 @@ class Runtime:
         self._status_task: asyncio.Task[None] | None = None
         self._stopped = asyncio.Event()
         self._recent_messages: deque[float] = deque()
+        self._config_lock = asyncio.Lock()
+        self._config_watch_task: asyncio.Task[None] | None = None
+        self._applied_revision = config_store.current_revision()
 
     async def start(self) -> None:
         self._stopped.clear()
         self._status_task = asyncio.create_task(self._status_loop(), name="status-loop")
+        self._config_watch_task = asyncio.create_task(
+            self._config_watch_loop(), name="config-watch"
+        )
         await self.tts.start()
         if self.demo:
             self.status = ConnectionStatus(state="connected", message="演示模式")
@@ -126,6 +231,10 @@ class Runtime:
             self._status_task.cancel()
             await asyncio.gather(self._status_task, return_exceptions=True)
             self._status_task = None
+        if self._config_watch_task is not None:
+            self._config_watch_task.cancel()
+            await asyncio.gather(self._config_watch_task, return_exceptions=True)
+            self._config_watch_task = None
         await self.tts.stop()
         await self._stop_client()
         await self.history.flush()
@@ -203,12 +312,60 @@ class Runtime:
                 self.status.message_rate = rate
                 await self.hub.broadcast("status", self.status.model_dump(mode="json"))
 
+    async def config_document(self) -> ConfigDocumentPayload:
+        def build() -> ConfigDocumentPayload:
+            return ConfigDocumentPayload(
+                config=self.config,
+                yaml_text=self.config_store.current_yaml_text(),
+                example_yaml=self.config_store.example_yaml_text(),
+                config_path=str(self.config_store.path),
+                example_path=str(self.config_store.example_path),
+                revision=self.config_store.current_revision(),
+            )
+
+        return await asyncio.to_thread(build)
+
+    async def render_config_yaml(self, config: AppConfig) -> str:
+        return await asyncio.to_thread(self.config_store.render_yaml, config)
+
+    async def validate_config_yaml(self, text: str) -> AppConfig:
+        return await asyncio.to_thread(self.config_store.validate_yaml_text, text)
+
+    async def save_config_document(
+        self, config: AppConfig, base_revision: str
+    ) -> ConfigDocumentPayload:
+        async with self._config_lock:
+            current_revision = await asyncio.to_thread(self.config_store.current_revision)
+            if base_revision != current_revision:
+                raise ConfigConflictError(await self.config_document())
+            await self._apply_config(config, persist=True)
+            return await self.config_document()
+
+    async def save_config_yaml_document(
+        self, text: str, base_revision: str
+    ) -> ConfigDocumentPayload:
+        async with self._config_lock:
+            current_revision = await asyncio.to_thread(self.config_store.current_revision)
+            if base_revision != current_revision:
+                raise ConfigConflictError(await self.config_document())
+            config = await asyncio.to_thread(self.config_store.save_yaml_text, text)
+            await self._apply_config(config, persist=False)
+            return await self.config_document()
+
     async def save_config(self, config: AppConfig) -> None:
+        async with self._config_lock:
+            await self._apply_config(config, persist=True)
+
+    async def _apply_config(self, config: AppConfig, *, persist: bool) -> None:
         previous = self.config
         if not config.cookie_file:
             config.cookie_file = "config/cookie.txt"
-        self.config_store.save(config)
+        if persist:
+            await asyncio.to_thread(self.config_store.save, config)
         self.config = config
+        self._applied_revision = await asyncio.to_thread(self.config_store.current_revision)
+        await self.tts.reconfigure(config.tts)
+        logging.getLogger().setLevel(getattr(logging, config.logging.level, logging.INFO))
         await self.hub.broadcast("config", config.model_dump(mode="json"))
         connection_changed = any(
             (
@@ -217,10 +374,41 @@ class Runtime:
                 previous.entry_merge_seconds != config.entry_merge_seconds,
                 previous.gift_merge_seconds != config.gift_merge_seconds,
                 previous.auto_connect != config.auto_connect,
+                previous.reconnect != config.reconnect,
             )
         )
         if connection_changed and not self.demo:
             await self.restart_client()
+
+    async def _config_watch_loop(self) -> None:
+        while not self._stopped.is_set():
+            await asyncio.sleep(CONFIG_WATCH_INTERVAL_SECONDS)
+            try:
+                revision = await asyncio.to_thread(self.config_store.current_revision)
+                if revision == self._applied_revision:
+                    continue
+                async with self._config_lock:
+                    revision = await asyncio.to_thread(self.config_store.current_revision)
+                    if revision == self._applied_revision:
+                        continue
+                    try:
+                        config = await asyncio.to_thread(self.config_store.reload_from_disk)
+                    except (OSError, ValueError, ValidationError) as exc:
+                        self._applied_revision = revision
+                        await self.hub.broadcast(
+                            "config_error",
+                            {
+                                "message": str(exc),
+                                "path": str(self.config_store.path),
+                                "revision": revision,
+                            },
+                        )
+                        continue
+                    await self._apply_config(config, persist=False)
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                logging.getLogger(__name__).exception("配置文件监听失败：%s", exc)
 
     async def import_cookie(self, cookie: str) -> None:
         cleaned = cookie.strip()
@@ -445,6 +633,71 @@ def create_app(runtime: Runtime) -> FastAPI:
         await runtime.save_config(config)
         return runtime.config
 
+    @app.get("/api/config/document")
+    async def get_config_document() -> ConfigDocumentPayload:
+        return await runtime.config_document()
+
+    @app.post("/api/config/validate")
+    async def validate_config(payload: ConfigYamlValidatePayload) -> dict[str, AppConfig]:
+        try:
+            config = await runtime.validate_config_yaml(payload.yaml)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "message": "配置校验失败",
+                    "errors": exc.errors(include_url=False),
+                },
+            ) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail={"message": str(exc)}) from exc
+        return {"config": config}
+
+    @app.post("/api/config/render")
+    async def render_config(payload: ConfigRenderPayload) -> dict[str, str]:
+        yaml_text = await runtime.render_config_yaml(payload.config)
+        return {"yaml": yaml_text}
+
+    @app.put("/api/config/document")
+    async def put_config_document(payload: ConfigFormSavePayload) -> ConfigDocumentPayload:
+        try:
+            return await runtime.save_config_document(payload.config, payload.base_revision)
+        except ConfigConflictError as exc:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "message": str(exc),
+                    "document": exc.document.model_dump(mode="json"),
+                },
+            ) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail={"message": str(exc)}) from exc
+
+    @app.put("/api/config/document/yaml")
+    async def put_config_yaml_document(
+        payload: ConfigYamlSavePayload,
+    ) -> ConfigDocumentPayload:
+        try:
+            return await runtime.save_config_yaml_document(payload.yaml, payload.base_revision)
+        except ConfigConflictError as exc:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "message": str(exc),
+                    "document": exc.document.model_dump(mode="json"),
+                },
+            ) from exc
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "message": "配置校验失败",
+                    "errors": exc.errors(include_url=False),
+                },
+            ) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail={"message": str(exc)}) from exc
+
     @app.post("/api/cookie")
     async def import_cookie(payload: CookiePayload) -> dict[str, bool]:
         try:
@@ -471,11 +724,20 @@ def create_app(runtime: Runtime) -> FastAPI:
         await runtime.emit_demo(count)
         return {"ok": True}
 
+    @app.get("/api/tts/voices")
+    async def list_tts_voices() -> dict[str, object]:
+        voices, offline = await _list_tts_voices()
+        return {"voices": voices, "offline": offline}
+
     @app.post("/api/tts/test")
-    async def test_tts() -> dict[str, bool]:
+    async def test_tts(payload: TTSTestPayload | None = None) -> dict[str, bool]:
         if not runtime.config.tts.enabled:
             raise HTTPException(status_code=400, detail="TTS 未启用")
-        await runtime.tts.speak_test()
+        request = payload or TTSTestPayload()
+        try:
+            await runtime.tts.speak_test(request.text, request.language)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
         return {"ok": True}
 
     @app.get("/api/fonts")

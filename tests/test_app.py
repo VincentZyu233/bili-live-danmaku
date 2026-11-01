@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import shutil
+import time
 from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+import bili_live_danmaku.app as app_module
 from bili_live_danmaku.app import Runtime, create_app, demo_messages
 from bili_live_danmaku.config import ConfigStore
 
@@ -57,3 +60,72 @@ def test_demo_messages_include_local_avatars_and_varied_kinds() -> None:
         for message in messages
     )
     assert len({message.kind for message in messages}) >= 5
+
+
+def test_config_document_api_validation_save_and_conflict(tmp_path: Path) -> None:
+    (tmp_path / "config").mkdir()
+    shutil.copy2(
+        Path(__file__).resolve().parents[1] / "config" / "config.example.yaml",
+        tmp_path / "config" / "config.example.yaml",
+    )
+    runtime = Runtime(ConfigStore(tmp_path), demo=True)
+    app = create_app(runtime)
+    with TestClient(app) as client:
+        document = client.get("/api/config/document").json()
+        assert document["config"]["version"] == 3
+        assert "推荐音色" in document["example_yaml"]
+        original_revision = document["revision"]
+
+        invalid = client.post("/api/config/validate", json={"yaml": "version: [bad"})
+        assert invalid.status_code == 422
+
+        rendered = client.post(
+            "/api/config/render", json={"config": document["config"]}
+        )
+        assert rendered.status_code == 200
+        assert "language_priority:" in rendered.json()["yaml"]
+
+        config = document["config"]
+        config["room"] = "999"
+        config["tts"]["voices"]["ja"] = "ja-JP-KeitaNeural"
+        saved = client.put(
+            "/api/config/document",
+            json={"config": config, "base_revision": original_revision},
+        )
+        assert saved.status_code == 200
+        assert saved.json()["config"]["room"] == "999"
+        assert runtime.tts.settings.voices.ja == "ja-JP-KeitaNeural"
+
+        stale = client.put(
+            "/api/config/document",
+            json={"config": config, "base_revision": original_revision},
+        )
+        assert stale.status_code == 409
+        assert stale.json()["detail"]["document"]["revision"] == saved.json()["revision"]
+
+        yaml_save = client.put(
+            "/api/config/document/yaml",
+            json={
+                "yaml": "version: 3\nroom: \'777\'\n",
+                "base_revision": saved.json()["revision"],
+            },
+        )
+        assert yaml_save.status_code == 200
+        assert yaml_save.json()["config"]["room"] == "777"
+
+
+def test_config_file_watcher_reloads_external_changes(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(app_module, "CONFIG_WATCH_INTERVAL_SECONDS", 0.02)
+    store = ConfigStore(tmp_path)
+    runtime = Runtime(store, demo=True)
+    app = create_app(runtime)
+    with TestClient(app) as client:
+        store.path.write_text("version: 3\nroom: \'4321\'\n", encoding="utf-8")
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline:
+            config = client.get("/api/config").json()
+            if config["room"] == "4321":
+                break
+            time.sleep(0.03)
+        assert client.get("/api/config").json()["room"] == "4321"
+        assert runtime.config.room == "4321"

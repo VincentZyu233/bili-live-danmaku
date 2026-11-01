@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Literal
+from typing import Annotated, Literal, cast
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class MessageKind(StrEnum):
@@ -95,9 +95,30 @@ class ReconnectSettings(BaseModel):
     max_seconds: float = Field(default=30.0, ge=1, le=300)
 
 
+TTS_LANGUAGE_CODES = ("zh", "en", "ja", "ko", "es", "fr", "de", "pt", "ru", "it")
+TTSVoiceId = Annotated[str, Field(min_length=1)]
+
+
+class TTSVoices(BaseModel):
+    zh: TTSVoiceId = "zh-CN-XiaoxiaoNeural"
+    en: TTSVoiceId = "en-US-AvaMultilingualNeural"
+    ja: TTSVoiceId = "ja-JP-NanamiNeural"
+    ko: TTSVoiceId = "ko-KR-SunHiNeural"
+    es: TTSVoiceId = "es-ES-XimenaNeural"
+    fr: TTSVoiceId = "fr-FR-VivienneMultilingualNeural"
+    de: TTSVoiceId = "de-DE-SeraphinaMultilingualNeural"
+    pt: TTSVoiceId = "pt-BR-ThalitaMultilingualNeural"
+    ru: TTSVoiceId = "ru-RU-SvetlanaNeural"
+    it: TTSVoiceId = "it-IT-ElsaNeural"
+
+    def get(self, language: str) -> str:
+        return cast(str, getattr(self, language))
+
+
 class TTSSettings(BaseModel):
     enabled: bool = False
-    voice: str = "zh-CN-XiaoxiaoNeural"
+    language_priority: list[str] = Field(default_factory=lambda: list(TTS_LANGUAGE_CODES))
+    voices: TTSVoices = Field(default_factory=TTSVoices)
     rate: str = "+0%"
     volume: str = "+0%"
     pitch: str = "+0Hz"
@@ -107,13 +128,25 @@ class TTSSettings(BaseModel):
     queue_size: int = Field(default=32, ge=1, le=500)
     min_interval_ms: int = Field(default=300, ge=0, le=10_000)
 
+    @field_validator("language_priority")
+    @classmethod
+    def validate_language_priority(cls, value: list[str]) -> list[str]:
+        if not value:
+            raise ValueError("language_priority 不能为空")
+        unknown = [language for language in value if language not in TTS_LANGUAGE_CODES]
+        if unknown:
+            raise ValueError(f"不支持的语言代码：{', '.join(unknown)}")
+        if len(value) != len(set(value)):
+            raise ValueError("language_priority 不能包含重复语言")
+        return value
+
 
 class LoggingSettings(BaseModel):
     level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
 
 class AppConfig(BaseModel):
-    version: int = 2
+    version: int = 3
     room: str = ""
     cookie_file: str = "config/cookie.txt"
     history_lines: int = Field(default=60, ge=0, le=2000)
@@ -129,7 +162,7 @@ class AppConfig(BaseModel):
 
 
 class EventEnvelope(BaseModel):
-    type: Literal["event", "history", "status", "config", "snapshot", "clear"]
+    type: Literal["event", "history", "status", "config", "config_error", "snapshot", "clear"]
     sequence: int
     server_time_ms: int
     payload: object
