@@ -37,9 +37,30 @@
 
 ## 🚀 启动
 
-双击 `scripts/start-bili-live-danmaku.cmd` 可检查并启动 6161 服务；服务已运行时只会打开 WebUI。桌面快捷方式名称为 `Bili Live Danmaku`，关闭控制台窗口即可停止服务。
+Windows 双击 `scripts/start-bili-live-danmaku.cmd` 可检查并启动 6161 服务；Linux/macOS 使用：
+
+```bash
+./scripts/start-bili-live-danmaku.sh
+```
+
+脚本会先检查服务是否已经运行；已运行时只打开 WebUI，未运行时启动服务。Windows 桌面快捷方式名称为 `Bili Live Danmaku`，关闭终端或控制台窗口即可停止服务。
+
+所有参数都会原样传给 `bili-live-danmaku`；脚本额外识别 `--port` 来切换健康检查和 Admin 地址：
 
 ```powershell
+.\scripts\start-bili-live-danmaku.cmd --demo --verbose
+.\scripts\start-bili-live-danmaku.cmd --room 5861873 --cookie-file "config/cookie.txt" --port 16161
+```
+
+```bash
+./scripts/start-bili-live-danmaku.sh --room 5861873 --cookie-file config/cookie.txt --port 16161
+```
+
+脚本只额外解析 `--port`、`--no-browser`、`--help` 和 `--version`，其余参数全部原样交给 CLI。服务已运行时使用 `--no-browser` 会打印 Admin URL，而不是再次启动或打开页面。
+
+也可以手动启动：
+
+```bash
 uv sync
 uv run bili-live-danmaku
 ```
